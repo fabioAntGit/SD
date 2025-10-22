@@ -1,11 +1,8 @@
+package src.common;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Representa um veículo no sistema de simulação de tráfego.
- * Cada veículo tem um tipo (moto, carro ou camião),
- * uma origem (entrada Ei) e um percurso definido (lista de cruzamentos).
- */
 public class Vehicle {
 
     // Contador global para gerar IDs únicos
