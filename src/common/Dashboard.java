@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Dashboard {
-    // Mapa: nome do cruzamento → última estatística recebida
+    // Mapa: nome do cruzamento -> última estatística recebida
     private final Map<String, MensagemDashboard> estatisticasPorCruzamento = new ConcurrentHashMap<>();
 
     public void atualizar(MensagemDashboard msg) {
@@ -39,7 +39,7 @@ public class Dashboard {
 
         // Mostrar estatísticas individuais
         for (MensagemDashboard msg : estatisticasPorCruzamento.values()) {
-            sb.append("📍 ").append(msg.getCruzamentoNome()).append(" -> ").append(msg).append("\n");
+            sb.append(" ").append(msg.getCruzamentoNome()).append(" -> ").append(msg).append("\n");
 
             // Somar por tipo (CARRO, MOTO, CAMIAO)
             for (var entry : msg.getTotalPorTipo().entrySet()) {
@@ -61,9 +61,9 @@ public class Dashboard {
 
         // Mostrar resumo global
         sb.append("\n----- ESTATÍSTICAS GLOBAIS -----\n");
-        sb.append("🚗 Totais por tipo: ").append(totalPorTipoGlobal).append("\n");
-        sb.append("🚦 Fila média por semáforo: ").append(String.format("%.2f", mediaFilaPorSemaforo)).append("\n");
-        sb.append("⏱️ Tempo médio global de permanência: ").append(String.format("%.2f", mediaTempoGlobal)).append("s\n");
+        sb.append("Totais por tipo: ").append(totalPorTipoGlobal).append("\n");
+        sb.append("Fila média por semáforo: ").append(String.format("%.2f", mediaFilaPorSemaforo)).append("\n");
+        sb.append("Tempo médio global de permanência: ").append(String.format("%.2f", mediaTempoGlobal)).append("s\n");
 
         sb.append("================================\n");
         return sb.toString();

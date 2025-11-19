@@ -1,6 +1,6 @@
 package src.common.enums;
 
-public enum NodeType {
+public enum EventoType {
     CRUZAMENTO,
     ENTRADA,
     SAIDA

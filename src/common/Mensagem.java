@@ -1,25 +1,24 @@
 package src.common;
 
-import src.nodes.Node;
+import src.nodes.Evento;
 
 import java.io.Serializable;
 
 public class Mensagem implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    private final Node cruzamentoOrigem;
-    private final Node cruzamentoDestino;
+    private final Evento cruzamentoOrigem;
+    private final Evento cruzamentoDestino;
     private final Veiculo veiculo;
 
 
-    public Mensagem(Node cruzamentoOrigem, Node cruzamentoDestino, Veiculo veiculo) {
+    public Mensagem(Evento cruzamentoOrigem, Evento cruzamentoDestino, Veiculo veiculo) {
         this.cruzamentoOrigem = cruzamentoOrigem;
         this.cruzamentoDestino = cruzamentoDestino;
         this.veiculo = veiculo;
     }
 
-    public Node getCruzamentoOrigem() { return cruzamentoOrigem; }
-    public Node getCruzamentoDestino() { return cruzamentoDestino; }
+    public Evento getCruzamentoOrigem() { return cruzamentoOrigem; }
+    public Evento getCruzamentoDestino() { return cruzamentoDestino; }
     public Veiculo getVeiculo() { return veiculo; }
 
     @Override

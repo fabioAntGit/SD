@@ -1,7 +1,7 @@
 package src.common;
 
 import src.common.enums.VeiculoType;
-import src.nodes.Node;
+import src.nodes.Evento;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -16,8 +16,8 @@ public class Veiculo implements Serializable {
     private static final AtomicInteger counter = new AtomicInteger(0);
     private final int id;
     private final VeiculoType tipo;
-    private final Node origem;          // Ex: "E1", "E2", "E3"
-    private final List<Node> percurso;  // Sequência de cruzamentos: ["Cr1", "Cr2", "S"]
+    private final Evento origem;          // Ex: "E1", "E2", "E3"
+    private final List<Evento> percurso;  // Sequência de cruzamentos: ["Cr1", "Cr2", "S"]
     private int posicaoAtual;             // Índice no percurso atual
     private final LocalDateTime tempoEntrada;    // Instante de entrada no sistema
     private LocalDateTime tempoSaida;            // Instante de saída (quando termina o percurso)
@@ -25,7 +25,7 @@ public class Veiculo implements Serializable {
     private double tempoAteProximoNode;
 
 
-    public Veiculo(VeiculoType tipo, Node origem, List<Node> percurso) {
+    public Veiculo(VeiculoType tipo, Evento origem, List<Evento> percurso) {
         this.id = counter.incrementAndGet();
         this.tipo = tipo;
         this.origem = origem;
@@ -55,11 +55,11 @@ public class Veiculo implements Serializable {
         return tipo;
     }
 
-    public Node getOrigem() {
+    public Evento getOrigem() {
         return origem;
     }
 
-    public List<Node> getPercurso() {
+    public List<Evento> getPercurso() {
         return percurso;
     }
 
@@ -88,7 +88,7 @@ public class Veiculo implements Serializable {
     }
 
     /** Retorna o próximo cruzamento, ou null se já terminou */
-    public Node getProximoNode() {
+    public Evento getProximoNode() {
         if (posicaoAtual + 1 < percurso.size()) {
             return percurso.get(posicaoAtual + 1);
         }

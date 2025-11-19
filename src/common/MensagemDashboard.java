@@ -1,19 +1,18 @@
 package src.common;
 
-import src.nodes.Node;
+import src.nodes.Evento;
 
 import java.io.Serializable;
 import java.util.Map;
 
 public class MensagemDashboard implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    private final Node cruzamento;
+    private final Evento cruzamento;
     private final Map<String, Integer> tamanhoFilas;  // semáforo -> nº veículos
     private final Map<String, Integer> totalPorTipo;  // tipo de veículo -> total
     private final double tempoMedioPermanencia;
 
-    public MensagemDashboard(Node cruzamento,
+    public MensagemDashboard(Evento cruzamento,
                              Map<String, Integer> tamanhoFilas,
                              Map<String, Integer> totalPorTipo,
                              double tempoMedioPermanencia) {

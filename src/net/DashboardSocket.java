@@ -21,14 +21,14 @@ public class DashboardSocket {
 
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("📊 Dashboard à escuta na porta " + port + "...");
+            System.out.println("Dashboard à escuta na porta " + port + "...");
 
             while (true) {
                 Socket socket = serverSocket.accept();
                 pool.submit(() -> tratarLigacao(socket));
             }
         } catch (IOException e) {
-            System.err.println("❌ Erro no Dashboard: " + e.getMessage());
+            System.err.println("Erro no Dashboard: " + e.getMessage());
         }
     }
 
@@ -41,7 +41,7 @@ public class DashboardSocket {
             }
 
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("⚠️ Erro ao receber estatísticas: " + e.getMessage());
+            System.err.println("Erro ao receber estatísticas: " + e.getMessage());
         }
     }
 }

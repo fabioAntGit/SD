@@ -3,7 +3,7 @@ package src.net;
 import src.common.Mensagem;
 import src.common.Semaforo;
 import src.common.Veiculo;
-import src.nodes.Node;
+import src.nodes.Evento;
 
 import java.io.*;
 import java.net.*;
@@ -13,12 +13,12 @@ import java.util.concurrent.locks.*;
 
 public class NodeServerSocket {
     private final int port;
-    private final Node cruzamento;
+    private final Evento cruzamento;
     private Lock lock;
     private final List<Semaforo> semaforos = new ArrayList<>();
     ControladorSemaforos controladorSemaforos;
 
-    public NodeServerSocket(Node cruzamento, int port) {
+    public NodeServerSocket(Evento cruzamento, int port) {
         this.cruzamento = cruzamento;
         this.port = port;
         this.lock = new ReentrantLock();
@@ -27,7 +27,7 @@ public class NodeServerSocket {
         controladorSemaforos.start();
     }
 
-    public void addSemaforo(Node cruzamentoOrigem){
+    public void addSemaforo(Evento cruzamentoOrigem){
         Condition podeAvancar = lock.newCondition();
         Semaforo newSemaforo = new Semaforo(cruzamento.getNome() + "-S" + semaforos.size(), cruzamentoOrigem, lock, podeAvancar);
         semaforos.add(newSemaforo);
@@ -36,7 +36,7 @@ public class NodeServerSocket {
 
     public void run() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("🏙️ " + cruzamento.getNome() + " à escuta na porta " + port + "...");
+            System.out.println(cruzamento.getNome() + " à escuta na porta " + port + "...");
 
             while (true) {
                 Socket socket = serverSocket.accept();
@@ -52,10 +52,10 @@ public class NodeServerSocket {
             Object obj = in.readObject();
 
             if (obj instanceof Mensagem msg) {
-                System.out.println("📨 [" + cruzamento.getNome() + "] recebeu: " + msg);
+                System.out.println("[" + cruzamento.getNome() + "] recebeu: " + msg);
 
                 Veiculo v = msg.getVeiculo();
-                Node cruzamentoOrigem = msg.getCruzamentoOrigem();
+                Evento cruzamentoOrigem = msg.getCruzamentoOrigem();
 
                 Semaforo s = semaforos.stream()
                         .filter(sf -> cruzamentoOrigem.equals(sf.getCruzamentoOrigem()))

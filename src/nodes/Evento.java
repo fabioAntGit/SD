@@ -1,20 +1,20 @@
 package src.nodes;
 
-import src.common.enums.NodeType;
+import src.common.enums.EventoType;
 
-public class Node {
+public class Evento {
     private String nome;
-    private NodeType tipo;
+    private EventoType tipo;
     private final String host;
     private final int port;
 
-    public Node(String host, int port) {
+    public Evento(String host, int port) {
         this.host = host;
         this.port = port;
     }
 
-    public void Node(String nomeCruzamento){
-        this.nome = nomeCruzamento;
+    public void Node(String nome){
+        this.nome = nome;
     }
 
     public String getNome() {return nome;}

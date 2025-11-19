@@ -1,7 +1,7 @@
 package src.common;
 
 import src.net.LigacaoEntreNodesSocket;
-import src.nodes.Node;
+import src.nodes.Evento;
 
 import java.util.concurrent.locks.*;
 import java.util.*;
@@ -10,13 +10,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Semaforo extends Thread {
     private final String idSemaforo;
     private final List<Veiculo> listaVeiculos;
-    private final Node cruzamentoOrigem;
+    private final Evento cruzamentoOrigem;
     private boolean ativo = false;
     private boolean emExecucao = true;
     private final Lock lock;
     private final Condition podeAvancar;
 
-    public Semaforo(String idSemaforo, Node cruzamentoOrigem,Lock lock, Condition podeAvancar) {
+    public Semaforo(String idSemaforo, Evento cruzamentoOrigem, Lock lock, Condition podeAvancar) {
         this.idSemaforo = idSemaforo;
         this.cruzamentoOrigem = cruzamentoOrigem;
         this.listaVeiculos = new CopyOnWriteArrayList<>();
@@ -26,7 +26,7 @@ public class Semaforo extends Thread {
 
     public void adicionarVeiculo(Veiculo v) {
         listaVeiculos.add(v);
-        System.out.println("🚗 " + v.getId() + " chegou ao semáforo " + idSemaforo);
+        System.out.println(v.getId() + " chegou ao semáforo " + idSemaforo);
     }
 
     public int getNumeroVeiculos() {
@@ -41,7 +41,7 @@ public class Semaforo extends Thread {
         return this.idSemaforo;
     }
 
-    public Node getCruzamentoOrigem(){
+    public Evento getCruzamentoOrigem(){
         return this.cruzamentoOrigem;
     }
 
@@ -73,13 +73,13 @@ public class Semaforo extends Thread {
                     Veiculo v = listaVeiculos.removeFirst();
                     Thread.sleep(v.getTempoAtravessarSemaforo());
 
-                    System.out.println("🚦 " + v + " passou no semáforo " + idSemaforo);
+                    System.out.println(v + " passou no semáforo " + idSemaforo);
 
                     // --- Criação da mensagem a enviar ---
-                    Node cruzamentoDestino = v.getProximoNode();
+                    Evento cruzamentoDestino = v.getProximoNode();
 
                     if (cruzamentoDestino == null) {
-                        System.err.println("⚠️ " + cruzamentoOrigem.getNome() + " já saiu do sistema" );
+                        System.err.println(cruzamentoOrigem.getNome() + " já saiu do sistema" );
                         continue;
                     }
 
@@ -98,7 +98,7 @@ public class Semaforo extends Thread {
                             );
 
                     ligacao.enviarMensagem(msg);
-                    System.out.println("📤 Mensagem enviada de " + cruzamentoOrigem.getNome() + " → " + cruzamentoDestino.getNome());
+                    System.out.println("Mensagem enviada de " + cruzamentoOrigem.getNome() + " → " + cruzamentoDestino.getNome());
                 }
 
             } catch (InterruptedException e) {
