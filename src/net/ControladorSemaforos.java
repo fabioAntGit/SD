@@ -58,8 +58,7 @@ public class ControladorSemaforos extends Thread {
         }
 
         if (melhor != null) {
-            System.out.println("Controlador escolheu " + melhor.getIdSemaforo() +
-                    " (prioridade = " + prioridadeMax + ")");
+            System.out.println("Controlador escolheu " + melhor.getIdSemaforo() + " (prioridade = " + prioridadeMax + ")");
         }
 
         return melhor;

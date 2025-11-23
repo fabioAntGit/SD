@@ -5,7 +5,6 @@ import src.nodes.Evento;
 import java.io.Serializable;
 
 public class Mensagem implements Serializable {
-    private static final long serialVersionUID = 1L;
     private final Evento cruzamentoOrigem;
     private final Evento cruzamentoDestino;
     private final Veiculo veiculo;

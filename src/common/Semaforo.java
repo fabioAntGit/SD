@@ -1,6 +1,5 @@
 package src.common;
 
-import src.net.LigacaoEntreNodesSocket;
 import src.nodes.Evento;
 
 import java.util.concurrent.locks.*;
@@ -90,6 +89,7 @@ public class Semaforo extends Thread {
                             v                   // veículo
                     );
 
+                    /*
                     // --- Envia via socket ---
                     LigacaoEntreNodesSocket ligacao =
                             new LigacaoEntreNodesSocket(
@@ -97,7 +97,7 @@ public class Semaforo extends Thread {
                                     cruzamentoDestino.getPort()   // Porta TCP do destino (ex: 5001)
                             );
 
-                    ligacao.enviarMensagem(msg);
+                    ligacao.enviarMensagem(msg);*/
                     System.out.println("Mensagem enviada de " + cruzamentoOrigem.getNome() + " → " + cruzamentoDestino.getNome());
                 }
 
@@ -107,5 +107,4 @@ public class Semaforo extends Thread {
             }
         }
     }
-
 }

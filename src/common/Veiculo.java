@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Veiculo implements Serializable {
-    private static final long serialVersionUID = 1L;
-
     // Contador global para gerar IDs únicos
     private static final AtomicInteger counter = new AtomicInteger(0);
     private final int id;
@@ -23,7 +21,6 @@ public class Veiculo implements Serializable {
     private LocalDateTime tempoSaida;            // Instante de saída (quando termina o percurso)
     private long tempoAtravessarSemaforo;
     private double tempoAteProximoNode;
-
 
     public Veiculo(VeiculoType tipo, Evento origem, List<Evento> percurso) {
         this.id = counter.incrementAndGet();

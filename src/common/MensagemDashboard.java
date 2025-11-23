@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.Map;
 
 public class MensagemDashboard implements Serializable {
-    private static final long serialVersionUID = 1L;
     private final Evento cruzamento;
     private final Map<String, Integer> tamanhoFilas;  // semáforo -> nº veículos
     private final Map<String, Integer> totalPorTipo;  // tipo de veículo -> total
