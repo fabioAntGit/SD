@@ -1,6 +1,7 @@
 package src.nodes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -12,24 +13,64 @@ public class GeradorCaminhos {
         this.topologia = topologia;
     }
 
-    public List<Node> gerarCaminhoAleatorio() {
-        List<String> entradas = new ArrayList<>(topologia.getEntradas());
-        String atualName = entradas.get(random.nextInt(entradas.size()));
-        Node atual = topologia.get(atualName);
+    public List<Node> gerarCaminho(String entrada) {
+        List<String> nomesCaminho;
 
-        List<Node> caminho = new ArrayList<>();
-        caminho.add(atual);
+        int p = random.nextInt(100);
 
-        // 2) gerar caminho até "S"
-        while (!atual.getName().equals("S")) {
-            List<Node> vizinhosNodes = atual.getNeighborsNodes(topologia);
-            if (vizinhosNodes.isEmpty()) break;
+        switch (entrada) {
+            case "E1":
+                if (p < 34) {
+                    // 34%: E1 -> Cr1 -> Cr4 -> Cr5 -> S
+                    nomesCaminho = Arrays.asList("E1", "Cr1", "Cr4", "Cr5", "S");
+                } else if (p < 67) {
+                    // 33%: E1 -> Cr1 -> Cr2 -> Cr5 -> S
+                    nomesCaminho = Arrays.asList("E1", "Cr1", "Cr2", "Cr5", "S");
+                } else {
+                    // 33%: E1 -> Cr1 -> Cr2 -> Cr3 -> S
+                    nomesCaminho = Arrays.asList("E1", "Cr1", "Cr2", "Cr3", "S");
+                }
+                break;
 
-            Node proximo = vizinhosNodes.get(random.nextInt(vizinhosNodes.size()));
-            caminho.add(proximo);
-            atual = proximo;
+            case "E2":
+                if (p < 34) {
+                    // 34%: E2 -> Cr2 -> Cr5 -> S
+                    nomesCaminho = Arrays.asList("E2", "Cr2", "Cr5", "S");
+                } else if (p < 67) {
+                    // 33%: E2 -> Cr2 -> Cr3 -> S
+                    nomesCaminho = Arrays.asList("E2", "Cr2", "Cr3", "S");
+                } else {
+                    // 33%: E2 -> Cr2 -> Cr1 -> Cr4 -> Cr5 -> S
+                    nomesCaminho = Arrays.asList("E2", "Cr2", "Cr1", "Cr4", "Cr5", "S");
+                }
+                break;
+
+            case "E3":
+                if (p < 34) {
+                    // 34%: E3 -> Cr3 -> S
+                    nomesCaminho = Arrays.asList("E3", "Cr3", "S");
+                } else if (p < 67) {
+                    // 33%: E3 -> Cr3 -> Cr2 -> Cr5 -> S
+                    nomesCaminho = Arrays.asList("E3", "Cr3", "Cr2", "Cr5", "S");
+                } else {
+                    // 33%: E3 -> Cr3 -> Cr2 -> Cr1 -> Cr4 -> Cr5 -> S
+                    nomesCaminho = Arrays.asList("E3", "Cr3", "Cr2", "Cr1", "Cr4", "Cr5", "S");
+                }
+                break;
+
+            default:
+                throw new IllegalArgumentException("Entrada inválida: " + entrada);
         }
 
-        return caminho;
+        List<Node> caminhoDeNos = new ArrayList<>();
+        for (String nome : nomesCaminho) {
+            Node node = topologia.get(nome);
+            if (node == null) {
+                throw new RuntimeException("Node não encontrado na topologia: " + nome);
+            }
+            caminhoDeNos.add(node);
+        }
+
+        return caminhoDeNos;
     }
 }

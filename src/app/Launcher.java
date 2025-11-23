@@ -2,6 +2,10 @@ package src.app;
 
 public class Launcher {
 
-    //FALTA FAZER AQUI O MAIN QUE VAI CRIAR TODOS OS NODESERVER PARA TODOS OS NODES E O DASHBOARD SOCKET
-    // E CHAMAR O TRAFFIC GENERATOR QUE VAI USAR A LIGACAOENTRECRUZAZMENTOS PARA POR OS VEICULOS DENTRO DOS NODES DE ENTRADA
+    public static void main(String[] args) {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            SwingInterface ui = new SwingInterface();
+            ui.setVisible(true);
+        });
+    }
 }

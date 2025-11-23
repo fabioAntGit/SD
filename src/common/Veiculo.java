@@ -1,7 +1,6 @@
 package src.common;
 
 import src.common.enums.VeiculoType;
-import src.nodes.Evento;
 import src.nodes.Node;
 
 import java.io.Serializable;
@@ -46,7 +45,6 @@ public class Veiculo implements Serializable {
         }
     }
 
-    // Getters e Setters
     public int getId() { return id; }
 
     public VeiculoType getTipo() { return tipo; }

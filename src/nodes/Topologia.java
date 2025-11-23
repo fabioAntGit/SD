@@ -36,4 +36,11 @@ public class Topologia {
     public Set<String> getEntradas() {
         return Set.of("E1", "E2", "E3");
     }
+
+    // Retorna lista de nos que apontam para "destino" (arestas de entrada)
+    public List<Node> getPredecessores(String destino) {
+        return graph.values().stream()
+                .filter(n -> n.getNeighbors().contains(destino))
+                .toList();
+    }
 }

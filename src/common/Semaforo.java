@@ -1,129 +1,156 @@
 package src.common;
 
-import src.nodes.Evento;
+import src.app.SwingInterface;
 import src.nodes.Node;
+import src.common.SemaforoStats;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.time.LocalDateTime;
-import java.util.concurrent.locks.*;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import src.net.SocketCliente;
 
 public class Semaforo extends Thread {
     private final String idSemaforo;
-    private final List<Veiculo> listaVeiculos;
     private final Node cruzamentoOrigem;
-    private boolean ativo = false;
-    private boolean emExecucao = true;
-    private final Lock lock;
-    private final Condition podeAvancar;
+    private final Deque<Veiculo> filaVeiculos = new ArrayDeque<>();
+    private final SemaforoStats stats = new SemaforoStats();
+    private final Lock lock = new ReentrantLock();
+    private final Condition podeProcessar = lock.newCondition();
+    private volatile boolean aberto = false;
+    private volatile boolean emExecucao = true;
 
-    public Semaforo(String idSemaforo, Node cruzamentoOrigem, Lock lock, Condition podeAvancar) {
+    public Semaforo(String idSemaforo, Node cruzamentoOrigem) {
         this.idSemaforo = idSemaforo;
         this.cruzamentoOrigem = cruzamentoOrigem;
-        this.listaVeiculos = new CopyOnWriteArrayList<>();
-        this.lock = lock;
-        this.podeAvancar = podeAvancar;
+        SwingInterface.notificarEstadoSemaforo(idSemaforo, false, 0);
     }
 
-    public void adicionarVeiculo(Veiculo v) {
-        listaVeiculos.add(v);
-        System.out.println("Veículo " + v.getId() + " chegou ao semáforo " + idSemaforo);
+    public void adicionarVeiculo(Veiculo veiculo) {
+        lock.lock();
+        try {
+            filaVeiculos.addLast(veiculo);
+            stats.registrarEnfileiramento(filaVeiculos.size());
+            SwingInterface.notificarEstadoSemaforo(idSemaforo, false, filaVeiculos.size());
+            podeProcessar.signalAll();
+        } finally {
+            lock.unlock();
+        }
+        System.out.println("Veiculo " + veiculo.getId() + " chegou ao semaforo " + idSemaforo);
     }
 
     public int getNumeroVeiculos() {
-        return listaVeiculos.size();
-    }
-
-    public void pararSemaforo() {
-        ativo = false;
-    }
-
-    public String getIdSemaforo() {
-        return this.idSemaforo;
-    }
-
-    public Node getCruzamentoOrigem() {
-        return this.cruzamentoOrigem;
-    }
-
-    public void ativar() {
         lock.lock();
         try {
-            ativo = true;
-            podeAvancar.signal();
+            return filaVeiculos.size();
         } finally {
             lock.unlock();
         }
     }
 
+    public String getIdSemaforo() {
+        return idSemaforo;
+    }
+
+    public void abrir() {
+        aberto = true;
+        SwingInterface.notificarEstadoSemaforo(idSemaforo, true, filaVeiculos.size());
+        lock.lock();
+        try {
+            podeProcessar.signalAll();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void fechar() {
+        aberto = false;
+        SwingInterface.notificarEstadoSemaforo(idSemaforo, false, filaVeiculos.size());
+    }
+
     public void parar() {
         emExecucao = false;
+        lock.lock();
+        try {
+            podeProcessar.signalAll();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public void run() {
         while (emExecucao) {
+            Veiculo veiculo;
+
             lock.lock();
             try {
-                // Espera até que o semáforo seja ativado
-                while (!ativo) {
-                    podeAvancar.await();
+                while (emExecucao && (filaVeiculos.isEmpty() || !aberto)) {
+                    podeProcessar.await();
                 }
-
-                // Processa os veículos na fila
-                if (!listaVeiculos.isEmpty()) {
-                    // Retira o primeiro veículo da fila
-                    Veiculo v = listaVeiculos.removeFirst();
-
-                    // Simula tempo a atravessar o semáforo
-                    Thread.sleep(v.getTempoAtravessarSemaforo() * 1000);
-
-                    System.out.println(v + " passou no semáforo " + idSemaforo);
-
-                    // Obtém o próximo cruzamento no percurso
-                    Node cruzamentoDestino = v.getProximo();
-                    if (cruzamentoDestino == null) {
-                        // Veículo terminou o percurso
-                        System.out.println("Veículo " + v.getId() + " terminou o percurso!");
-                        v.setTempoSaida(LocalDateTime.now());
-                        continue;
-                    }
-
-                    // Avança a posição do veículo
-                    v.avancar();
-
-
-                    // Cria a mensagem a enviar (se quiseres manter a classe Mensagem)
-                    Mensagem msg = new Mensagem(
-                            cruzamentoOrigem,  // este Semaforo pertence a um Node
-                            cruzamentoDestino,
-                            v
-                    );
-
-                    // Envia via TCP para o próximo cruzamento
-                    try (Socket socket = new Socket(cruzamentoDestino.getHost(), cruzamentoDestino.getPort());
-                         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
-
-                        out.writeObject(msg);
-                        out.flush();
-
-                        System.out.println("Mensagem enviada de " + cruzamentoOrigem.getName() +
-                                " → " + cruzamentoDestino.getName() + " | Veículo " + v.getId());
-                    } catch (IOException e) {
-                        System.err.println("Erro ao enviar veículo " + v.getId() +
-                                " para " + cruzamentoDestino.getName() + ": " + e.getMessage());
-                    }
+                if (!emExecucao) {
+                    return;
                 }
-
+                veiculo = filaVeiculos.pollFirst();
+                stats.registrarSaida(veiculo.getTipo(), filaVeiculos.size());
+                SwingInterface.notificarEstadoSemaforo(idSemaforo, true, filaVeiculos.size());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                ativo = false;
+                return;
             } finally {
                 lock.unlock();
             }
+
+            if (veiculo == null) {
+                continue;
+            }
+
+            try {
+                Thread.sleep(veiculo.getTempoAtravessarSemaforo() * 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+
+            Node cruzamentoDestino = veiculo.getProximo();
+            if (cruzamentoDestino == null) {
+                veiculo.setTempoSaida(LocalDateTime.now());
+                SwingInterface.notificarEnvio(idSemaforo, "S", veiculo);
+                SwingInterface.notificarEstadoSemaforo(idSemaforo, false, 0);
+                SwingInterface.notificarPosicaoVeiculo(null, veiculo);
+                System.out.println("Veiculo " + veiculo.getId() + " terminou o percurso no semaforo " + idSemaforo);
+                continue;
+            }
+
+            try (SocketCliente cliente = new SocketCliente(cruzamentoDestino.getHost(), cruzamentoDestino.getPort())) {
+                cliente.enviarObjeto(veiculo);
+                SwingInterface.notificarEnvio(idSemaforo, cruzamentoDestino.getName(), veiculo);
+
+                System.out.println("Mensagem enviada de " + cruzamentoOrigem.getName() +
+                        " -> " + cruzamentoDestino.getName() + " | Veiculo " + veiculo.getId());
+            } catch (IOException e) {
+                System.err.println("Erro ao enviar veiculo " + veiculo.getId() +
+                        " para " + cruzamentoDestino.getName() + ": " + e.getMessage());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                lock.lock();
+                try {
+                    int filaRestante = filaVeiculos.size();
+                    stats.registrarEnfileiramento(filaRestante);
+                    SwingInterface.notificarEstadoSemaforo(idSemaforo, filaRestante > 0, filaRestante);
+                } finally {
+                    lock.unlock();
+                }
+            }
         }
+    }
+
+    public SemaforoStats.Snapshot getStatsSnapshot() {
+        return stats.snapshot();
     }
 }

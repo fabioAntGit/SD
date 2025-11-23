@@ -21,6 +21,7 @@ public class Node implements Serializable {
     public String getName() { return name; }
     public String getHost() { return host; }
     public int getPort() { return port; }
+    public List<String> getNeighbors() { return neighbors; }
     public List<Node> getNeighborsNodes(Topologia topologia) {
         return neighbors.stream()
                 .map(topologia::get)
