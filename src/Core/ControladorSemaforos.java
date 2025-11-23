@@ -1,13 +1,9 @@
-package src.net;
+package src.Core;
 
-import src.common.Semaforo;
-
+import src.Core.Data.Semaforo;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Controla abertura/fecho dos semaforos de um cruzamento, escolhendo o de maior fila.
- */
 public class ControladorSemaforos extends Thread {
     private final List<Semaforo> semaforos;
     private final int TEMPO_VERDE = 4000;
@@ -30,7 +26,6 @@ public class ControladorSemaforos extends Thread {
                 continue;
             }
 
-            // Fecha todos os outros e abre o prioritario
             for (Semaforo s : semaforos) {
                 if (s == prioritario) continue;
                 s.fechar();

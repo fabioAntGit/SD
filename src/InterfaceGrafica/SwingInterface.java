@@ -1,13 +1,12 @@
-package src.app;
+package src.InterfaceGrafica;
 
-import src.common.Veiculo;
-import src.common.enums.VeiculoType;
-import src.net.CruzamentoServer;
-import src.net.EntradaSistema;
-import src.nodes.GeradorCaminhos;
-import src.nodes.Node;
-import src.nodes.Topologia;
-
+import src.Core.Data.Veiculo;
+import src.Core.Enums.VeiculoType;
+import src.Servers.CruzamentoServer;
+import src.Servers.EntradaSistema;
+import src.Core.GeradorCaminhos;
+import src.Core.Data.Evento;
+import src.Core.Data.Topologia;
 import javax.swing.*;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -19,15 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import src.common.SemaforoStats;
-import src.common.GlobalStats;
+import src.Estatisticas.SemaforoStats;
+import src.Estatisticas.GlobalStats;
 
 public class SwingInterface extends JFrame {
-    // --- Componentes de UI ---
     private final JTextArea logArea = new JTextArea();
     private final TrafficMapPanel mapPanel = new TrafficMapPanel(); // Painel de desenho
-
     private final JButton startServersButton = new JButton("Iniciar servidores");
     private final JButton gerarVeiculoButton = new JButton("Gerar veiculo");
     private final JButton fluxoFixoButton = new JButton("Simulação automática");
@@ -37,33 +33,26 @@ public class SwingInterface extends JFrame {
     private final DefaultListModel<String> movimentosListModel = new DefaultListModel<>();
     private final DefaultListModel<String> estatisticasListModel = new DefaultListModel<>();
     private final JTextArea globalStatsArea = new JTextArea(5, 25);
-
-    // --- Logica do Sistema ---
     private Topologia topologia;
     private GeradorCaminhos geradorCaminhos;
     private volatile boolean servidoresAtivos;
     private final List<Thread> servidores = new ArrayList<>();
     private volatile boolean fluxoFixoAtivo;
     private Thread fluxoFixoThread;
-
-    // --- Estado Global para Visualizacao (Static para acesso facil das Threads) ---
     private static SwingInterface instance;
-
-    // Mapa: "Cr1->Cr2" -> estado (ativo) + fila
     private static final Map<String, SemaforoStatus> semaforosStatus = new ConcurrentHashMap<>();
     private static final Map<String, SemaforoStats.Snapshot> semaforosSnapshots = new ConcurrentHashMap<>();
     private static volatile GlobalStats.Snapshot globalSnapshot;
 
     public SwingInterface() {
         super("Simulador de Transito - Visualizacao em Tempo Real");
-        instance = this; // Define a instancia singleton
+        instance = this;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 750);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // --- Painel Superior (Controles) ---
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT));
         controls.add(startServersButton);
         controls.add(new JLabel("Tipo:"));
@@ -83,16 +72,13 @@ public class SwingInterface extends JFrame {
 
         add(controls, BorderLayout.NORTH);
 
-        // --- Area Central (Mapa + Status + Log) ---
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 
-        // Configuracao do Log
         logArea.setEditable(false);
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         JScrollPane scrollLog = new JScrollPane(logArea);
         scrollLog.setPreferredSize(new Dimension(800, 150));
 
-        // Painel lateral de status
         JPanel statusPanel = new JPanel();
         statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
 
@@ -131,17 +117,13 @@ public class SwingInterface extends JFrame {
         JSplitPane topo = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, mapPanel, statusPanel);
         topo.setResizeWeight(0.75);
 
-        splitPane.setTopComponent(topo); // Mapa + status em cima
-        splitPane.setBottomComponent(scrollLog); // Log em baixo
-        splitPane.setResizeWeight(0.75); // Mapa ocupa 75% da altura
+        splitPane.setTopComponent(topo);
+        splitPane.setBottomComponent(scrollLog);
+        splitPane.setResizeWeight(0.75);
 
         add(splitPane, BorderLayout.CENTER);
 
     }
-
-    // ---------------------------------------------------------
-    // LOGICA DE CONTROLE
-    // ---------------------------------------------------------
 
     private void startServers() {
         if (servidoresAtivos) {
@@ -157,8 +139,7 @@ public class SwingInterface extends JFrame {
         if (entradaCombo.getItemCount() > 0) entradaCombo.setSelectedIndex(0);
         entradaCombo.setEnabled(true);
 
-        // Inicia threads dos servidores (Cruzamentos)
-        for (Node node : new ArrayList<>(topologia.getGraph().values())) {
+        for (Evento node : new ArrayList<>(topologia.getGraph().values())) {
             Thread thread = new Thread(() -> {
                 try {
                     new CruzamentoServer(node, topologia).start();
@@ -272,7 +253,6 @@ public class SwingInterface extends JFrame {
         SwingUtilities.invokeLater(() -> {
             String linha = "V" + veiculo.getId() + " via " + semaforoId + " -> " + destino;
             movimentosListModel.add(0, linha);
-            // Limita tamanho da lista para nao crescer demais
             while (movimentosListModel.size() > 50) {
                 movimentosListModel.removeElementAt(movimentosListModel.size() - 1);
             }
@@ -334,7 +314,7 @@ public class SwingInterface extends JFrame {
         }
         fluxoFixoAtivo = true;
         fluxoFixoButton.setText("Parar Simulação automática");
-        appendLog("Simulação automática iniciada (intervalos regulares em cada Ei).");
+        appendLog("Simulação automática iniciada.");
         fluxoFixoThread = new Thread(this::loopFluxoFixo, "Simulação automática");
         fluxoFixoThread.setDaemon(true);
         fluxoFixoThread.start();
@@ -371,12 +351,12 @@ public class SwingInterface extends JFrame {
 
     private void gerarVeiculoEntrada(String entradaSelecionada, VeiculoType tipo) throws Exception {
         if (entradaSelecionada == null) return;
-        List<Node> caminho = geradorCaminhos.gerarCaminho(entradaSelecionada);
-        Node origem = caminho.get(0);
+        List<Evento> caminho = geradorCaminhos.gerarCaminho(entradaSelecionada);
+        Evento origem = caminho.get(0);
 
         Veiculo veiculo = new Veiculo(tipo, origem, caminho);
 
-        String rotaStr = caminho.stream().map(Node::getName).collect(Collectors.joining("->"));
+        String rotaStr = caminho.stream().map(Evento::getName).collect(Collectors.joining("->"));
         appendLog("Gerado: Veiculo " + veiculo.getId() + " (" + tipo + ") Rota: " + rotaStr);
 
         registrarMovimento(origem.getName(), veiculo);
@@ -385,7 +365,6 @@ public class SwingInterface extends JFrame {
     }
 
     class TrafficMapPanel extends JPanel {
-        // Coordenadas fixas baseadas na imagem do diagrama
         private final Map<String, Point> coordenadas = Map.of(
                 "E1", new Point(150, 50),  "E2", new Point(450, 50),  "E3", new Point(750, 50),
                 "Cr1", new Point(150, 250), "Cr2", new Point(450, 250), "Cr3", new Point(750, 250),
@@ -401,12 +380,10 @@ public class SwingInterface extends JFrame {
         }
 
         public void atualizarPosicao(String novoNo, Veiculo v) {
-            // Remove o veiculo de onde ele estava antes
             for (List<VehicleRender> lista : veiculosNosNos.values()) {
                 lista.removeIf(render -> render.veiculo().getId() == v.getId());
             }
 
-            // Adiciona na nova posicao (se nao for null/saida)
             if (novoNo != null && veiculosNosNos.containsKey(novoNo)) {
                 veiculosNosNos.get(novoNo).add(new VehicleRender(v, origemDe(v)));
             }
@@ -427,31 +404,22 @@ public class SwingInterface extends JFrame {
 
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // 1. DESENHAR LINHAS (CONEXOES)
             g2.setColor(Color.LIGHT_GRAY);
             g2.setStroke(new BasicStroke(3));
 
             desenharSeta(g2, "E1", "Cr1"); desenharSeta(g2, "E2", "Cr2"); desenharSeta(g2, "E3", "Cr3");
             desenharSeta(g2, "Cr1", "Cr4"); desenharSeta(g2, "Cr2", "Cr5"); desenharSeta(g2, "Cr3", "S");
             desenharSeta(g2, "Cr4", "Cr5"); desenharSeta(g2, "Cr5", "S");
-            // Bidirecionais
             desenharSeta(g2, "Cr1", "Cr2"); desenharSeta(g2, "Cr2", "Cr1");
             desenharSeta(g2, "Cr2", "Cr3"); desenharSeta(g2, "Cr3", "Cr2");
 
-            // 2. DESENHAR NOS E SEMAFOROS
             for (var entry : coordenadas.entrySet()) {
                 String nome = entry.getKey();
                 Point p = entry.getValue();
 
-                boolean isEntradaOuSaida = nome.startsWith("E") || nome.equals("S");
-                boolean aberto = semaforosStatus.entrySet().stream()
-                        .anyMatch(e -> e.getKey().endsWith("->" + nome) && e.getValue().ativo);
-
-                // Fundo do no
                 g2.setColor(new Color(230, 240, 255)); // Azul bem claro
                 g2.fillOval(p.x - 25, p.y - 25, 50, 50);
 
-                // Texto do Nome
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(1));
                 g2.setFont(new Font("Arial", Font.BOLD, 14));
@@ -459,7 +427,6 @@ public class SwingInterface extends JFrame {
                 g2.drawString(nome, p.x - fm.stringWidth(nome)/2, p.y + fm.getAscent()/2 - 3);
             }
 
-            // 3. DESENHAR SEMAFOROS POR DIRECAO (origem->destino)
             for (var entry : semaforosStatus.entrySet()) {
                 String key = entry.getKey();
                 String[] partes = key.split("->");
@@ -481,7 +448,6 @@ public class SwingInterface extends JFrame {
                 g2.drawOval(x - 8, y - 8, 16, 16);
             }
 
-            // 4. DESENHAR VEICULOS
             for (var entry : veiculosNosNos.entrySet()) {
                 String destino = entry.getKey();
                 Point pNo = coordenadas.get(destino);
@@ -523,26 +489,25 @@ public class SwingInterface extends JFrame {
         }
 
         private Point offsetSemaforo(String origem, String destino) {
-            // Posiciona a bolinha do semaforo ao redor do nodo de destino
             switch (destino) {
                 case "Cr2":
-                    if ("E2".equals(origem)) return new Point(0, -40);      // topo
-                    if ("Cr3".equals(origem)) return new Point(40, 0);      // direita
-                    return new Point(-40, 0);                              // esquerda (Cr1)
+                    if ("E2".equals(origem)) return new Point(0, -40);
+                    if ("Cr3".equals(origem)) return new Point(40, 0);
+                    return new Point(-40, 0);
                 case "Cr1":
-                    if ("E1".equals(origem)) return new Point(0, -40);     // topo
-                    return new Point(40, 0);                               // direita (de Cr2)
+                    if ("E1".equals(origem)) return new Point(0, -40);
+                    return new Point(40, 0);
                 case "Cr3":
-                    if ("E3".equals(origem)) return new Point(0, -40);     // topo
-                    return new Point(-40, 0);                              // esquerda (de Cr2)
+                    if ("E3".equals(origem)) return new Point(0, -40);
+                    return new Point(-40, 0);
                 case "Cr4":
-                    return new Point(0, -40);                              // de Cr1 (topo)
+                    return new Point(0, -40);
                 case "Cr5":
-                    if ("Cr2".equals(origem)) return new Point(0, -40);    // topo
-                    return new Point(-40, 0);                              // esquerda (de Cr4)
+                    if ("Cr2".equals(origem)) return new Point(0, -40);
+                    return new Point(-40, 0);
                 case "S":
-                    if ("Cr3".equals(origem)) return new Point(0, -40);    // topo
-                    return new Point(-40, 0);                              // esquerda (de Cr5)
+                    if ("Cr3".equals(origem)) return new Point(0, -40);
+                    return new Point(-40, 0);
                 default:
                     return new Point(0, -40);
             }
@@ -553,11 +518,11 @@ public class SwingInterface extends JFrame {
                 case "Cr2" -> {
                     if ("E2".equals(origem)) yield "top";
                     if ("Cr3".equals(origem)) yield "right";
-                    yield "left"; // Cr1
+                    yield "left";
                 }
                 case "Cr1" -> "E1".equals(origem) ? "top" : "right";
                 case "Cr3" -> "E3".equals(origem) ? "top" : "left";
-                case "Cr4" -> "top"; // vem de Cr1
+                case "Cr4" -> "top";
                 case "Cr5" -> "Cr2".equals(origem) ? "top" : "left";
                 case "S"   -> "Cr3".equals(origem) ? "top" : "left";
                 default -> "top";
@@ -576,8 +541,5 @@ public class SwingInterface extends JFrame {
         }
     }
 
-    // ---------------------------------------------------------
-    // MODELO DE ESTADO DO SEMAFORO
-    // ---------------------------------------------------------
     private record SemaforoStatus(boolean ativo, int fila) {}
 }

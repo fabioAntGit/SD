@@ -1,17 +1,15 @@
-package src.nodes;
+package src.Core.Data;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class Node implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class Evento implements Serializable {
     String name;
     String host;
     int port;
     List<String> neighbors;
 
-    public Node(String name, String host, int port, List<String> neighbors) {
+    public Evento(String name, String host, int port, List<String> neighbors) {
         this.name = name;
         this.host = host;
         this.port = port;
@@ -22,9 +20,4 @@ public class Node implements Serializable {
     public String getHost() { return host; }
     public int getPort() { return port; }
     public List<String> getNeighbors() { return neighbors; }
-    public List<Node> getNeighborsNodes(Topologia topologia) {
-        return neighbors.stream()
-                .map(topologia::get)
-                .collect(Collectors.toList());
-    }
 }

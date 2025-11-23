@@ -1,7 +1,6 @@
-package src.common;
+package src.Estatisticas;
 
-import src.common.enums.VeiculoType;
-
+import src.Core.Enums.VeiculoType;
 import java.util.EnumMap;
 import java.util.Map;
 

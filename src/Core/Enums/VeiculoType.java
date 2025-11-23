@@ -1,4 +1,4 @@
-package src.common.enums;
+package src.Core.Enums;
 
 public enum VeiculoType {
     MOTO,

@@ -1,9 +1,7 @@
-package src.common;
+package src.Core.Data;
 
-import src.app.SwingInterface;
-import src.nodes.Node;
-import src.common.SemaforoStats;
-
+import src.Estatisticas.SemaforoStats;
+import src.InterfaceGrafica.SwingInterface;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
@@ -11,12 +9,11 @@ import java.util.Deque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import src.net.SocketCliente;
+import src.Servers.SocketCliente;
 
 public class Semaforo extends Thread {
     private final String idSemaforo;
-    private final Node cruzamentoOrigem;
+    private final Evento cruzamentoOrigem;
     private final Deque<Veiculo> filaVeiculos = new ArrayDeque<>();
     private final SemaforoStats stats = new SemaforoStats();
     private final Lock lock = new ReentrantLock();
@@ -24,7 +21,7 @@ public class Semaforo extends Thread {
     private volatile boolean aberto = false;
     private volatile boolean emExecucao = true;
 
-    public Semaforo(String idSemaforo, Node cruzamentoOrigem) {
+    public Semaforo(String idSemaforo, Evento cruzamentoOrigem) {
         this.idSemaforo = idSemaforo;
         this.cruzamentoOrigem = cruzamentoOrigem;
         SwingInterface.notificarEstadoSemaforo(idSemaforo, false, 0);
@@ -72,16 +69,6 @@ public class Semaforo extends Thread {
         SwingInterface.notificarEstadoSemaforo(idSemaforo, false, filaVeiculos.size());
     }
 
-    public void parar() {
-        emExecucao = false;
-        lock.lock();
-        try {
-            podeProcessar.signalAll();
-        } finally {
-            lock.unlock();
-        }
-    }
-
     @Override
     public void run() {
         while (emExecucao) {
@@ -116,7 +103,7 @@ public class Semaforo extends Thread {
                 return;
             }
 
-            Node cruzamentoDestino = veiculo.getProximo();
+            Evento cruzamentoDestino = veiculo.getProximo();
             if (cruzamentoDestino == null) {
                 veiculo.setTempoSaida(LocalDateTime.now());
                 SwingInterface.notificarEnvio(idSemaforo, "S", veiculo);

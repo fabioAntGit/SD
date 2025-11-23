@@ -1,12 +1,9 @@
-package src.net;
+package src.Servers;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-/**
- * Pequeno wrapper para criar e enviar objetos via socket TCP.
- */
 public class SocketCliente implements AutoCloseable {
     private final Socket socket;
     private final ObjectOutputStream out;

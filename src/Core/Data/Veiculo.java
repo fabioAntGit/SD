@@ -1,8 +1,6 @@
-package src.common;
+package src.Core.Data;
 
-import src.common.enums.VeiculoType;
-import src.nodes.Node;
-
+import src.Core.Enums.VeiculoType;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -10,26 +8,23 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Veiculo implements Serializable {
-    private static final long serialVersionUID = 1L;
-
     private static final AtomicInteger counter = new AtomicInteger(0);
-
     private final int id;
     private final VeiculoType tipo;
-    private final Node origem;
-    private final List<Node> percurso;
+    private final Evento origem;
+    private final List<Evento> percurso;
     private int posicaoAtual;
     private final LocalDateTime tempoEntrada;
     private LocalDateTime tempoSaida;
     private long tempoAtravessarSemaforo;
     private double tempoAteProximoNode;
 
-    public Veiculo(VeiculoType tipo, Node origem, List<Node> percurso) {
+    public Veiculo(VeiculoType tipo, Evento origem, List<Evento> percurso) {
         this.id = counter.incrementAndGet();
         this.tipo = tipo;
         this.origem = origem;
         this.percurso = percurso;
-        this.posicaoAtual = -1; // no início ainda não entrou no percurso
+        this.posicaoAtual = -1;
         this.tempoEntrada = LocalDateTime.now();
 
         switch (tipo) {
@@ -49,9 +44,9 @@ public class Veiculo implements Serializable {
 
     public VeiculoType getTipo() { return tipo; }
 
-    public Node getOrigem() { return origem; }
+    public Evento getOrigem() { return origem; }
 
-    public List<Node> getPercurso() { return percurso; }
+    public List<Evento> getPercurso() { return percurso; }
 
     public int getPosicaoAtual() { return posicaoAtual; }
 
@@ -65,20 +60,17 @@ public class Veiculo implements Serializable {
 
     public double getTempoAteProximoNode() { return tempoAteProximoNode; }
 
-    // Avança para o próximo nó no percurso
     public void avancar() {
         if (posicaoAtual < percurso.size() - 1)
             posicaoAtual++;
     }
 
-    // Retorna o próximo nó do percurso ou null se terminou
-    public Node getProximo() {
+    public Evento getProximo() {
         if (posicaoAtual + 1 < percurso.size())
             return percurso.get(posicaoAtual + 1);
         return null;
     }
 
-    // Tempo total no sistema (em segundos)
     public double getTempoTotal() {
         if (tempoEntrada == null || tempoSaida == null) return -1;
         double tempoReal = Duration.between(tempoEntrada, tempoSaida).toSeconds();
@@ -92,7 +84,7 @@ public class Veiculo implements Serializable {
         return String.format(
                 "Veiculo{id=%d, tipo=%s, origem=%s, pos=%s, percurso=%s}",
                 id, tipo, origem.getName(), posStr,
-                percurso.stream().map(Node::getName).toList()
+                percurso.stream().map(Evento::getName).toList()
         );
     }
 }
