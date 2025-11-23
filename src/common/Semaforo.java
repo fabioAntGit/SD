@@ -1,7 +1,12 @@
 package src.common;
 
 import src.nodes.Evento;
+import src.nodes.Node;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.concurrent.locks.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -9,13 +14,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Semaforo extends Thread {
     private final String idSemaforo;
     private final List<Veiculo> listaVeiculos;
-    private final Evento cruzamentoOrigem;
+    private final Node cruzamentoOrigem;
     private boolean ativo = false;
     private boolean emExecucao = true;
     private final Lock lock;
     private final Condition podeAvancar;
 
-    public Semaforo(String idSemaforo, Evento cruzamentoOrigem, Lock lock, Condition podeAvancar) {
+    public Semaforo(String idSemaforo, Node cruzamentoOrigem, Lock lock, Condition podeAvancar) {
         this.idSemaforo = idSemaforo;
         this.cruzamentoOrigem = cruzamentoOrigem;
         this.listaVeiculos = new CopyOnWriteArrayList<>();
@@ -25,7 +30,7 @@ public class Semaforo extends Thread {
 
     public void adicionarVeiculo(Veiculo v) {
         listaVeiculos.add(v);
-        System.out.println(v.getId() + " chegou ao semáforo " + idSemaforo);
+        System.out.println("Veículo " + v.getId() + " chegou ao semáforo " + idSemaforo);
     }
 
     public int getNumeroVeiculos() {
@@ -36,11 +41,11 @@ public class Semaforo extends Thread {
         ativo = false;
     }
 
-    public String getIdSemaforo(){
+    public String getIdSemaforo() {
         return this.idSemaforo;
     }
 
-    public Evento getCruzamentoOrigem(){
+    public Node getCruzamentoOrigem() {
         return this.cruzamentoOrigem;
     }
 
@@ -63,47 +68,61 @@ public class Semaforo extends Thread {
         while (emExecucao) {
             lock.lock();
             try {
+                // Espera até que o semáforo seja ativado
                 while (!ativo) {
                     podeAvancar.await();
                 }
 
+                // Processa os veículos na fila
                 if (!listaVeiculos.isEmpty()) {
                     // Retira o primeiro veículo da fila
                     Veiculo v = listaVeiculos.removeFirst();
-                    Thread.sleep(v.getTempoAtravessarSemaforo());
+
+                    // Simula tempo a atravessar o semáforo
+                    Thread.sleep(v.getTempoAtravessarSemaforo() * 1000);
 
                     System.out.println(v + " passou no semáforo " + idSemaforo);
 
-                    // --- Criação da mensagem a enviar ---
-                    Evento cruzamentoDestino = v.getProximoNode();
-
+                    // Obtém o próximo cruzamento no percurso
+                    Node cruzamentoDestino = v.getProximo();
                     if (cruzamentoDestino == null) {
-                        System.err.println(cruzamentoOrigem.getNome() + " já saiu do sistema" );
+                        // Veículo terminou o percurso
+                        System.out.println("Veículo " + v.getId() + " terminou o percurso!");
+                        v.setTempoSaida(LocalDateTime.now());
                         continue;
                     }
 
-                    // Cria a mensagem completa com origem, destino e veículo
+                    // Avança a posição do veículo
+                    v.avancar();
+
+
+                    // Cria a mensagem a enviar (se quiseres manter a classe Mensagem)
                     Mensagem msg = new Mensagem(
-                            cruzamentoOrigem,   // origem
-                            cruzamentoDestino,  // destino
-                            v                   // veículo
+                            cruzamentoOrigem,  // este Semaforo pertence a um Node
+                            cruzamentoDestino,
+                            v
                     );
 
-                    /*
-                    // --- Envia via socket ---
-                    LigacaoEntreNodesSocket ligacao =
-                            new LigacaoEntreNodesSocket(
-                                    cruzamentoDestino.getHost(),  // IP destino (ex: "127.0.0.1")
-                                    cruzamentoDestino.getPort()   // Porta TCP do destino (ex: 5001)
-                            );
+                    // Envia via TCP para o próximo cruzamento
+                    try (Socket socket = new Socket(cruzamentoDestino.getHost(), cruzamentoDestino.getPort());
+                         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
 
-                    ligacao.enviarMensagem(msg);*/
-                    System.out.println("Mensagem enviada de " + cruzamentoOrigem.getNome() + " → " + cruzamentoDestino.getNome());
+                        out.writeObject(msg);
+                        out.flush();
+
+                        System.out.println("Mensagem enviada de " + cruzamentoOrigem.getName() +
+                                " → " + cruzamentoDestino.getName() + " | Veículo " + v.getId());
+                    } catch (IOException e) {
+                        System.err.println("Erro ao enviar veículo " + v.getId() +
+                                " para " + cruzamentoDestino.getName() + ": " + e.getMessage());
+                    }
                 }
 
             } catch (InterruptedException e) {
-                ativo = false;
                 Thread.currentThread().interrupt();
+                ativo = false;
+            } finally {
+                lock.unlock();
             }
         }
     }

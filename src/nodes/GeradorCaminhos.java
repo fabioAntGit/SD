@@ -12,27 +12,24 @@ public class GeradorCaminhos {
         this.topologia = topologia;
     }
 
-    public List<String> gerarCaminhoAleatorio() {
-        // 1) escolher entrada aleatória
+    public List<Node> gerarCaminhoAleatorio() {
         List<String> entradas = new ArrayList<>(topologia.getEntradas());
-        String atual = entradas.get(random.nextInt(entradas.size()));
+        String atualName = entradas.get(random.nextInt(entradas.size()));
+        Node atual = topologia.get(atualName);
 
-        List<String> caminho = new ArrayList<>();
+        List<Node> caminho = new ArrayList<>();
         caminho.add(atual);
 
-        // 2) gerar caminho até S
-        while (!atual.equals("S")) {
-            Node node = topologia.get(atual);
+        // 2) gerar caminho até "S"
+        while (!atual.getName().equals("S")) {
+            List<Node> vizinhosNodes = atual.getNeighborsNodes(topologia);
+            if (vizinhosNodes.isEmpty()) break;
 
-            if (node.neighbors.isEmpty())
-                break; // isto só acontece em S
-
-            List<String> vizinhos = node.neighbors;
-            String proximo = vizinhos.get(random.nextInt(vizinhos.size()));
-
+            Node proximo = vizinhosNodes.get(random.nextInt(vizinhosNodes.size()));
             caminho.add(proximo);
             atual = proximo;
         }
+
         return caminho;
     }
 }
