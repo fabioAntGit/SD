@@ -8,7 +8,6 @@ import java.util.List;
 public class TrafficGenerator {
 
     public static void main(String[] args) {
-
         Topologia topo = new Topologia();
         GeradorCaminhos gerador = new GeradorCaminhos(topo);
 

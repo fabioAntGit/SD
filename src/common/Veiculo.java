@@ -107,8 +107,12 @@ public class Veiculo implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("Vehicle{id=%d, tipo=%s, origem=%s, pos=%s, percurso=%s}",
-                id, tipo, origem, percurso.get(posicaoAtual), percurso);
+        String posStr = posicaoAtual == -1 ? origem.getNome() : percurso.get(posicaoAtual).getNome();
+
+        return String.format(
+                "Vehicle{id=%d, tipo=%s, origem=%s, pos=%s, percurso=%s}",
+                id, tipo, origem.getNome(), posStr, percurso
+        );
     }
 
     public long getTempoAtravessarSemaforo() {

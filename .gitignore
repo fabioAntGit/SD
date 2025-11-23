@@ -1,0 +1,67 @@
+# --- Java ---
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.ear
+
+# --- Build directories ---
+/target/
+/build/
+/out/
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Plugin-specific (safe to ignore)
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/aws.xml
+.idea/**/contentModel.xml
+
+# Data sources
+.idea/dataSources/
+.idea/dataSources.ids
+.idea/dataSources.local.xml
+.idea/sqlDataSources.xml
+.idea/datasources.xml
+.idea/dataSources/
+
+# Generated files
+.idea/**/gradle.xml
+.idea/**/libraries
+
+# --- Maven ---
+# Ignore target directory
+target/
+
+# Maven release plugin files
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# --- Gradle ---
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle-build-info/
+
+# --- VSCode (in case) ---
+.vscode/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Environment ---
+.env
+.env.*
