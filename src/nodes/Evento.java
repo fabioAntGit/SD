@@ -13,7 +13,7 @@ public class Evento {
         this.port = port;
     }
 
-    public void Node(String nome){
+    public void setNome(String nome){
         this.nome = nome;
     }
 
