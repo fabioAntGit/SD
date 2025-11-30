@@ -16,12 +16,12 @@ public class GlobalStats {
         }
     }
 
-    public synchronized void registrar(Veiculo veiculo) {
+    public synchronized void registar(Veiculo veiculo) {
         LocalDateTime entrada = veiculo.getTempoEntrada();
         LocalDateTime saida = veiculo.getTempoSaida();
         if (entrada == null || saida == null) return;
         double segundos = Duration.between(entrada, saida).toMillis() / 1000.0;
-        statsPorTipo.get(veiculo.getTipo()).registrar(segundos);
+        statsPorTipo.get(veiculo.getTipo()).registar(segundos);
     }
 
     public synchronized Snapshot snapshot() {

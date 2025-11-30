@@ -2,6 +2,7 @@ package src.InterfaceGrafica;
 
 import src.Core.Data.Veiculo;
 import src.Core.Enums.VeiculoType;
+import src.Estatisticas.VeiculoStats;
 import src.Servers.CruzamentoServer;
 import src.Servers.EntradaSistema;
 import src.Core.GeradorCaminhos;
@@ -12,6 +13,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.BorderFactory;
 import java.awt.*;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,7 @@ public class SwingInterface extends JFrame {
     private final DefaultListModel<String> semaforosListModel = new DefaultListModel<>();
     private final DefaultListModel<String> movimentosListModel = new DefaultListModel<>();
     private final DefaultListModel<String> estatisticasListModel = new DefaultListModel<>();
+    private final DefaultListModel<String> veiculosListModel = new DefaultListModel<>();
     private final JTextArea globalStatsArea = new JTextArea(5, 25);
     private Topologia topologia;
     private GeradorCaminhos geradorCaminhos;
@@ -91,24 +94,32 @@ public class SwingInterface extends JFrame {
         JList<String> movimentosList = new JList<>(movimentosListModel);
         movimentosList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         JScrollPane movimentosScroll = new JScrollPane(movimentosList);
-        movimentosScroll.setBorder(BorderFactory.createTitledBorder("Movimentos (para onde vai)"));
+        movimentosScroll.setBorder(BorderFactory.createTitledBorder("Movimentos Veiculos"));
         movimentosScroll.setPreferredSize(new Dimension(260, 260));
+
+        JList<String> veiculosList = new JList<>(veiculosListModel);
+        veiculosList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        JScrollPane veiculosScroll = new JScrollPane(veiculosList);
+        veiculosScroll.setBorder(BorderFactory.createTitledBorder("Stats Veiculos"));
+        veiculosScroll.setPreferredSize(new Dimension(260, 260));
 
         JList<String> estatList = new JList<>(estatisticasListModel);
         estatList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         JScrollPane estatScroll = new JScrollPane(estatList);
-        estatScroll.setBorder(BorderFactory.createTitledBorder("Stats semaforos"));
+        estatScroll.setBorder(BorderFactory.createTitledBorder("Stats Semaforos"));
         estatScroll.setPreferredSize(new Dimension(260, 260));
 
         globalStatsArea.setEditable(false);
         globalStatsArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         JScrollPane globalScroll = new JScrollPane(globalStatsArea);
         globalScroll.setBorder(BorderFactory.createTitledBorder("Stats globais (S)"));
-        globalScroll.setPreferredSize(new Dimension(260, 120));
+        globalScroll.setPreferredSize(new Dimension(260, 260));
 
         statusPanel.add(semaforoScroll);
         statusPanel.add(Box.createVerticalStrut(10));
         statusPanel.add(movimentosScroll);
+        statusPanel.add(Box.createVerticalStrut(10));
+        statusPanel.add(veiculosScroll);
         statusPanel.add(Box.createVerticalStrut(10));
         statusPanel.add(estatScroll);
         statusPanel.add(Box.createVerticalStrut(10));
@@ -159,6 +170,28 @@ public class SwingInterface extends JFrame {
         appendLog("Servidores iniciados. Mapa pronto.");
     }
 
+    //TODO
+    public void registarStatsVeiculo(Veiculo v) {
+
+        int id = v.getId();
+        LocalDateTime entrada = v.getTempoEntrada();
+        LocalDateTime saida = v.getTempoSaida();
+
+        String entradaStr = entrada != null ? entrada.toString() : "-";
+        String saidaStr = saida != null ? saida.toString() : "-";
+
+        double tempoTotal = v.getTempoTotal();
+        long tempoSemaforo = v.getTempoAtravessarSemaforo();
+        double tempoNodes = v.getTempoAteProximoNode();
+
+        String linha = String.format(
+                "%s | Entrada: %s | Saída: %s | Total: %.1fs | Nó: %.2fs | Semáforo: %ds",
+                id, entradaStr, saidaStr, tempoTotal, tempoNodes, tempoSemaforo
+        );
+
+        veiculosListModel.addElement(linha);
+    }
+
     private void gerarVeiculo() {
         if (!servidoresAtivos || topologia == null || geradorCaminhos == null) {
             appendLog("Inicie os servidores antes de gerar veiculos.");
@@ -189,7 +222,7 @@ public class SwingInterface extends JFrame {
 
     public static void notificarPosicaoVeiculo(String nomeNo, Veiculo veiculo) {
         if (instance != null) {
-            instance.registrarMovimento(nomeNo, veiculo);
+            instance.registarMovimento(nomeNo, veiculo);
         }
     }
 
@@ -201,7 +234,7 @@ public class SwingInterface extends JFrame {
 
     public static void notificarEnvio(String semaforoId, String destino, Veiculo veiculo) {
         if (instance != null) {
-            instance.registrarMovimentoSemaforo(semaforoId, destino, veiculo);
+            instance.registarMovimentoSemaforo(semaforoId, destino, veiculo);
         }
     }
 
@@ -212,6 +245,13 @@ public class SwingInterface extends JFrame {
         }
     }
 
+    //TODO
+    public static void notificarStatsVeiculos(String veiculoId, VeiculoStats.Snapshot snapshot) {
+        if (instance != null) {
+            instance.atualizarStatsVeiculosUI(snapshot);
+        }
+    }
+
     public static void notificarStatsGlobais(GlobalStats.Snapshot snapshot) {
         globalSnapshot = snapshot;
         if (instance != null) {
@@ -219,10 +259,35 @@ public class SwingInterface extends JFrame {
         }
     }
 
-    private void registrarMovimento(String nomeNo, Veiculo veiculo) {
+    private void registarMovimento(String nomeNo, Veiculo veiculo) {
         SwingUtilities.invokeLater(() -> {
             mapPanel.atualizarPosicao(nomeNo, veiculo);
             mapPanel.repaint();
+        });
+    }
+
+    //TODO
+    private void atualizarStatsVeiculosUI(VeiculoStats.Snapshot snapshot) {
+        SwingUtilities.invokeLater(() -> {
+            veiculosListModel.clear();
+
+            snapshot.porVeiculo().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> {
+                        VeiculoStats.VeiculoSnapshot s = entry.getValue();
+
+                        String linha = String.format(
+                                "V%-3d | %-7s | total=%.1fs | semaforos=%.1fs | nodes=%.1fs | estimado=%.1fs",
+                                s.id(),
+                                s.tipo(),
+                                s.tempoNoSistema(),
+                                s.tempoSemaforo(),
+                                s.tempoNodes(),
+                                s.tempoTotalEstimado()
+                        );
+
+                        veiculosListModel.addElement(linha);
+                    });
         });
     }
 
@@ -249,7 +314,7 @@ public class SwingInterface extends JFrame {
         });
     }
 
-    private void registrarMovimentoSemaforo(String semaforoId, String destino, Veiculo veiculo) {
+    private void registarMovimentoSemaforo(String semaforoId, String destino, Veiculo veiculo) {
         SwingUtilities.invokeLater(() -> {
             String linha = "V" + veiculo.getId() + " via " + semaforoId + " -> " + destino;
             movimentosListModel.add(0, linha);
@@ -359,7 +424,7 @@ public class SwingInterface extends JFrame {
         String rotaStr = caminho.stream().map(Evento::getName).collect(Collectors.joining("->"));
         appendLog("Gerado: Veiculo " + veiculo.getId() + " (" + tipo + ") Rota: " + rotaStr);
 
-        registrarMovimento(origem.getName(), veiculo);
+        registarMovimento(origem.getName(), veiculo);
 
         new EntradaSistema().enviarVeiculo(veiculo);
     }

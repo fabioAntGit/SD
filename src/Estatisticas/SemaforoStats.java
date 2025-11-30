@@ -11,14 +11,14 @@ public class SemaforoStats {
     private long amostras;
     private final Map<VeiculoType, Integer> veiculosProcessados = new EnumMap<>(VeiculoType.class);
 
-    public synchronized void registrarEnfileiramento(int filaAtual) {
+    public synchronized void registarEnfileiramento(int filaAtual) {
         this.filaAtual = filaAtual;
         filaMax = Math.max(filaMax, filaAtual);
         somaFilas += filaAtual;
         amostras++;
     }
 
-    public synchronized void registrarSaida(VeiculoType tipo, int filaAtual) {
+    public synchronized void registarSaida(VeiculoType tipo, int filaAtual) {
         this.filaAtual = filaAtual;
         filaMax = Math.max(filaMax, filaAtual);
         somaFilas += filaAtual;

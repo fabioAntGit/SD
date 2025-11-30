@@ -6,7 +6,7 @@ public class TipoStats {
     private double min = Double.MAX_VALUE;
     private double max = Double.MIN_VALUE;
 
-    void registrar(double valorSegundos) {
+    void registar(double valorSegundos) {
         count++;
         soma += valorSegundos;
         min = Math.min(min, valorSegundos);

@@ -31,7 +31,7 @@ public class Semaforo extends Thread {
         lock.lock();
         try {
             filaVeiculos.addLast(veiculo);
-            stats.registrarEnfileiramento(filaVeiculos.size());
+            stats.registarEnfileiramento(filaVeiculos.size());
             SwingInterface.notificarEstadoSemaforo(idSemaforo, false, filaVeiculos.size());
             podeProcessar.signalAll();
         } finally {
@@ -83,7 +83,7 @@ public class Semaforo extends Thread {
                     return;
                 }
                 veiculo = filaVeiculos.pollFirst();
-                stats.registrarSaida(veiculo.getTipo(), filaVeiculos.size());
+                stats.registarSaida(veiculo.getTipo(), filaVeiculos.size());
                 SwingInterface.notificarEstadoSemaforo(idSemaforo, true, filaVeiculos.size());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -128,7 +128,7 @@ public class Semaforo extends Thread {
                 lock.lock();
                 try {
                     int filaRestante = filaVeiculos.size();
-                    stats.registrarEnfileiramento(filaRestante);
+                    stats.registarEnfileiramento(filaRestante);
                     SwingInterface.notificarEstadoSemaforo(idSemaforo, filaRestante > 0, filaRestante);
                 } finally {
                     lock.unlock();

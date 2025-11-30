@@ -70,7 +70,7 @@ public class CruzamentoServer {
                 SwingInterface.notificarPosicaoVeiculo(null, veiculo);
                 if ("S".equals(node.getName())) {
                     veiculo.setTempoSaida(java.time.LocalDateTime.now());
-                    globalStats.registrar(veiculo);
+                    globalStats.registar(veiculo);
                     logGlobalStats();
                     SwingInterface.notificarStatsGlobais(globalStats.snapshot());
                 }
