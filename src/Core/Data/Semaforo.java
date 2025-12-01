@@ -1,7 +1,11 @@
 package src.Core.Data;
 
 import src.Estatisticas.SemaforoStats;
-import src.InterfaceGrafica.SwingInterface;
+import src.Servers.ClientSocket;
+import src.Core.Data.dtos.SemaforoStateEvent;
+import src.Core.Data.dtos.MovementEvent;
+import src.Core.Data.dtos.PositionEvent;
+import src.Core.Data.dtos.SemaforoStatsEvent;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
@@ -9,11 +13,10 @@ import java.util.Deque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import src.Servers.SocketCliente;
 
 public class Semaforo extends Thread {
     private final String idSemaforo;
-    private final Evento cruzamentoOrigem;
+    private final No cruzamentoOrigem;
     private final Deque<Veiculo> filaVeiculos = new ArrayDeque<>();
     private final SemaforoStats stats = new SemaforoStats();
     private final Lock lock = new ReentrantLock();
@@ -21,25 +24,42 @@ public class Semaforo extends Thread {
     private volatile boolean aberto = false;
     private volatile boolean emExecucao = true;
 
-    public Semaforo(String idSemaforo, Evento cruzamentoOrigem) {
+    /**
+     * Cria um semaforo associado a um cruzamento de origem.
+     *
+     * @param idSemaforo identificador unico do semaforo
+     * @param cruzamentoOrigem cruzamento que possui este semaforo
+     */
+    public Semaforo(String idSemaforo, No cruzamentoOrigem) {
         this.idSemaforo = idSemaforo;
         this.cruzamentoOrigem = cruzamentoOrigem;
-        SwingInterface.notificarEstadoSemaforo(idSemaforo, false, 0);
+        emitirEstado(0, false);
+        enviarStats();
     }
 
+    /**
+     * Enfileira um veiculo para processamento e notifica o dashboard.
+     *
+     * @param veiculo veiculo que chegou ao semaforo
+     */
     public void adicionarVeiculo(Veiculo veiculo) {
         lock.lock();
         try {
             filaVeiculos.addLast(veiculo);
             stats.registarEnfileiramento(filaVeiculos.size());
-            SwingInterface.notificarEstadoSemaforo(idSemaforo, false, filaVeiculos.size());
+            enviarStats();
+            emitirEstado(filaVeiculos.size(), false);
             podeProcessar.signalAll();
         } finally {
             lock.unlock();
         }
-        System.out.println("Veiculo " + veiculo.getId() + " chegou ao semaforo " + idSemaforo);
     }
 
+    /**
+     * Obtem o numero de veiculos aguardando no semaforo.
+     *
+     * @return quantidade de veiculos em fila
+     */
     public int getNumeroVeiculos() {
         lock.lock();
         try {
@@ -49,13 +69,10 @@ public class Semaforo extends Thread {
         }
     }
 
-    public String getIdSemaforo() {
-        return idSemaforo;
-    }
-
+    /** Abre o semaforo, permitindo passagem e acordando aguardantes. */
     public void abrir() {
         aberto = true;
-        SwingInterface.notificarEstadoSemaforo(idSemaforo, true, filaVeiculos.size());
+        emitirEstado(filaVeiculos.size(), true);
         lock.lock();
         try {
             podeProcessar.signalAll();
@@ -64,11 +81,13 @@ public class Semaforo extends Thread {
         }
     }
 
+    /** Fecha o semaforo e emite o estado atual para o dashboard. */
     public void fechar() {
         aberto = false;
-        SwingInterface.notificarEstadoSemaforo(idSemaforo, false, filaVeiculos.size());
+        emitirEstado(filaVeiculos.size(), false);
     }
 
+    /** Loop principal que processa a fila de veiculos enquanto em execucao. */
     @Override
     public void run() {
         while (emExecucao) {
@@ -84,7 +103,8 @@ public class Semaforo extends Thread {
                 }
                 veiculo = filaVeiculos.pollFirst();
                 stats.registarSaida(veiculo.getTipo(), filaVeiculos.size());
-                SwingInterface.notificarEstadoSemaforo(idSemaforo, true, filaVeiculos.size());
+                enviarStats();
+                emitirEstado(filaVeiculos.size(), true);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
@@ -103,22 +123,18 @@ public class Semaforo extends Thread {
                 return;
             }
 
-            Evento cruzamentoDestino = veiculo.getProximo();
+            No cruzamentoDestino = veiculo.getProximo();
             if (cruzamentoDestino == null) {
                 veiculo.setTempoSaida(LocalDateTime.now());
-                SwingInterface.notificarEnvio(idSemaforo, "S", veiculo);
-                SwingInterface.notificarEstadoSemaforo(idSemaforo, false, 0);
-                SwingInterface.notificarPosicaoVeiculo(null, veiculo);
-                System.out.println("Veiculo " + veiculo.getId() + " terminou o percurso no semaforo " + idSemaforo);
+                emitirMovimento("S", veiculo);
+                emitirEstado(0, false);
+                emitirPosicao(null, veiculo);
                 continue;
             }
 
-            try (SocketCliente cliente = new SocketCliente(cruzamentoDestino.getHost(), cruzamentoDestino.getPort())) {
-                cliente.enviarObjeto(veiculo);
-                SwingInterface.notificarEnvio(idSemaforo, cruzamentoDestino.getName(), veiculo);
-
-                System.out.println("Mensagem enviada de " + cruzamentoOrigem.getName() +
-                        " -> " + cruzamentoDestino.getName() + " | Veiculo " + veiculo.getId());
+            try {
+                ClientSocket.enviarObjeto(cruzamentoDestino.getHost(), cruzamentoDestino.getPort(), veiculo);
+                emitirMovimento(cruzamentoDestino.getName(), veiculo);
             } catch (IOException e) {
                 System.err.println("Erro ao enviar veiculo " + veiculo.getId() +
                         " para " + cruzamentoDestino.getName() + ": " + e.getMessage());
@@ -129,7 +145,8 @@ public class Semaforo extends Thread {
                 try {
                     int filaRestante = filaVeiculos.size();
                     stats.registarEnfileiramento(filaRestante);
-                    SwingInterface.notificarEstadoSemaforo(idSemaforo, filaRestante > 0, filaRestante);
+                    enviarStats();
+                    emitirEstado(filaRestante, filaRestante > 0);
                 } finally {
                     lock.unlock();
                 }
@@ -137,6 +154,58 @@ public class Semaforo extends Thread {
         }
     }
 
+    /** Envia as estatisticas atuais do semaforo ao dashboard. */
+    private void enviarStats() {
+        try {
+            ClientSocket.enviarParaDashboard(new SemaforoStatsEvent(java.util.Map.of(idSemaforo, stats.snapshot())));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Emite estado de atividade e tamanho da fila para o dashboard.
+     *
+     * @param fila tamanho atual da fila
+     * @param ativo indica se o semaforo esta a libertar veiculos
+     */
+    private void emitirEstado(int fila, boolean ativo) {
+        try {
+            ClientSocket.enviarParaDashboard(new SemaforoStateEvent(idSemaforo, ativo, fila));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Regista movimento de um veiculo entre nos.
+     *
+     * @param destino identificador do no de destino
+     * @param veiculo veiculo em transito
+     */
+    private void emitirMovimento(String destino, Veiculo veiculo) {
+        try {
+            ClientSocket.enviarParaDashboard(new MovementEvent(idSemaforo, destino, veiculo));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Atualiza a posicao do veiculo no dashboard.
+     *
+     * @param no identificador do no atual
+     * @param veiculo veiculo posicionado
+     */
+    private void emitirPosicao(String no, Veiculo veiculo) {
+        try {
+            ClientSocket.enviarParaDashboard(new PositionEvent(no, veiculo));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** @return instantaneo das estatisticas deste semaforo. */
     public SemaforoStats.Snapshot getStatsSnapshot() {
         return stats.snapshot();
     }

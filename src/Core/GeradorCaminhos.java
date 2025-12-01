@@ -1,6 +1,6 @@
 package src.Core;
 
-import src.Core.Data.Evento;
+import src.Core.Data.No;
 import src.Core.Data.Topologia;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,11 +11,22 @@ public class GeradorCaminhos {
     private final Topologia topologia;
     private final Random random = new Random();
 
+    /**
+     * Inicializa o gerador com a topologia conhecida.
+     *
+     * @param topologia grafo de nos e ligacoes
+     */
     public GeradorCaminhos(Topologia topologia) {
         this.topologia = topologia;
     }
 
-    public List<Evento> gerarCaminho(String entrada) {
+    /**
+     * Gera um percurso completo partindo de uma entrada ate a saida S.
+     *
+     * @param entrada nome do no de entrada
+     * @return lista ordenada de nos a visitar
+     */
+    public List<No> gerarCaminho(String entrada) {
         List<String> nomesCaminho;
 
         int p = random.nextInt(100);
@@ -52,14 +63,14 @@ public class GeradorCaminhos {
                 break;
 
             default:
-                throw new IllegalArgumentException("Entrada inválida: " + entrada);
+                throw new IllegalArgumentException("Entrada invalida: " + entrada);
         }
 
-        List<Evento> caminhoDeNos = new ArrayList<>();
+        List<No> caminhoDeNos = new ArrayList<>();
         for (String nome : nomesCaminho) {
-            Evento node = topologia.get(nome);
+            No node = topologia.get(nome);
             if (node == null) {
-                throw new RuntimeException("Node não encontrado na topologia: " + nome);
+                throw new RuntimeException("No nao encontrado na topologia: " + nome);
             }
             caminhoDeNos.add(node);
         }

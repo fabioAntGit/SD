@@ -3,18 +3,17 @@ package src.InterfaceGrafica;
 import src.Core.Data.Veiculo;
 import src.Core.Enums.VeiculoType;
 import src.Estatisticas.VeiculoStats;
-import src.Servers.CruzamentoServer;
 import src.Servers.EntradaSistema;
 import src.Core.GeradorCaminhos;
-import src.Core.Data.Evento;
+import src.Core.Data.No;
 import src.Core.Data.Topologia;
 import javax.swing.*;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.BorderFactory;
 import java.awt.*;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import src.Estatisticas.SemaforoStats;
 import src.Estatisticas.GlobalStats;
+import src.Servers.DashboardServer;
 
 public class SwingInterface extends JFrame {
     private final JTextArea logArea = new JTextArea();
-    private final TrafficMapPanel mapPanel = new TrafficMapPanel(); // Painel de desenho
+    private TrafficMapPanel mapPanel;
     private final JButton startServersButton = new JButton("Iniciar servidores");
     private final JButton gerarVeiculoButton = new JButton("Gerar veiculo");
-    private final JButton fluxoFixoButton = new JButton("Simulação automática");
+    private final JButton fluxoFixoButton = new JButton("Simulacao automatica");
     private final JComboBox<VeiculoType> tipoCombo = new JComboBox<>(VeiculoType.values());
     private final JComboBox<String> entradaCombo = new JComboBox<>();
     private final DefaultListModel<String> semaforosListModel = new DefaultListModel<>();
@@ -39,24 +39,42 @@ public class SwingInterface extends JFrame {
     private Topologia topologia;
     private GeradorCaminhos geradorCaminhos;
     private volatile boolean servidoresAtivos;
-    private final List<Thread> servidores = new ArrayList<>();
+    private final List<Process> servidores = new ArrayList<>();
     private volatile boolean fluxoFixoAtivo;
     private Thread fluxoFixoThread;
     private static SwingInterface instance;
     private static final Map<String, SemaforoStatus> semaforosStatus = new ConcurrentHashMap<>();
     private static final Map<String, SemaforoStats.Snapshot> semaforosSnapshots = new ConcurrentHashMap<>();
     private static volatile GlobalStats.Snapshot globalSnapshot;
+    private static final DateTimeFormatter HORA_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private final DashboardServer dashboardServer = new DashboardServer();
+    private static final Color BG_DARK = new Color(30, 30, 30);
+    private static final Color PANEL_DARK = new Color(45, 45, 45);
+    private static final Color TEXT_LIGHT = new Color(220, 220, 220);
+    private static final Color BORDER_DARK = new Color(70, 70, 70);
 
+    /** Inicializa a interface grafica e o servidor do dashboard. */
     public SwingInterface() {
         super("Simulador de Transito - Visualizacao em Tempo Real");
         instance = this;
+        dashboardServer.start();
+        mapPanel = new TrafficMapPanel(semaforosStatus);
+
+        aplicarTemaEscuro();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 750);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                stopServers();
+            }
+        });
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        controls.setBackground(BG_DARK);
         controls.add(startServersButton);
         controls.add(new JLabel("Tipo:"));
         controls.add(tipoCombo);
@@ -79,41 +97,60 @@ public class SwingInterface extends JFrame {
 
         logArea.setEditable(false);
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        logArea.setBackground(PANEL_DARK);
+        logArea.setForeground(TEXT_LIGHT);
         JScrollPane scrollLog = new JScrollPane(logArea);
         scrollLog.setPreferredSize(new Dimension(800, 150));
+        scrollLog.getViewport().setBackground(PANEL_DARK);
 
         JPanel statusPanel = new JPanel();
         statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
+        statusPanel.setBackground(BG_DARK);
 
         JList<String> semaforosList = new JList<>(semaforosListModel);
         semaforosList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        semaforosList.setBackground(PANEL_DARK);
+        semaforosList.setForeground(TEXT_LIGHT);
         JScrollPane semaforoScroll = new JScrollPane(semaforosList);
         semaforoScroll.setBorder(BorderFactory.createTitledBorder("Semaforos (ativo / fila)"));
         semaforoScroll.setPreferredSize(new Dimension(260, 260));
+        semaforoScroll.getViewport().setBackground(PANEL_DARK);
 
         JList<String> movimentosList = new JList<>(movimentosListModel);
         movimentosList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        movimentosList.setBackground(PANEL_DARK);
+        movimentosList.setForeground(TEXT_LIGHT);
         JScrollPane movimentosScroll = new JScrollPane(movimentosList);
         movimentosScroll.setBorder(BorderFactory.createTitledBorder("Movimentos Veiculos"));
         movimentosScroll.setPreferredSize(new Dimension(260, 260));
+        movimentosScroll.getViewport().setBackground(PANEL_DARK);
 
         JList<String> veiculosList = new JList<>(veiculosListModel);
         veiculosList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        veiculosList.setBackground(PANEL_DARK);
+        veiculosList.setForeground(TEXT_LIGHT);
         JScrollPane veiculosScroll = new JScrollPane(veiculosList);
         veiculosScroll.setBorder(BorderFactory.createTitledBorder("Stats Veiculos"));
         veiculosScroll.setPreferredSize(new Dimension(260, 260));
+        veiculosScroll.getViewport().setBackground(PANEL_DARK);
 
         JList<String> estatList = new JList<>(estatisticasListModel);
         estatList.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        estatList.setBackground(PANEL_DARK);
+        estatList.setForeground(TEXT_LIGHT);
         JScrollPane estatScroll = new JScrollPane(estatList);
         estatScroll.setBorder(BorderFactory.createTitledBorder("Stats Semaforos"));
         estatScroll.setPreferredSize(new Dimension(260, 260));
+        estatScroll.getViewport().setBackground(PANEL_DARK);
 
         globalStatsArea.setEditable(false);
         globalStatsArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        globalStatsArea.setBackground(PANEL_DARK);
+        globalStatsArea.setForeground(TEXT_LIGHT);
         JScrollPane globalScroll = new JScrollPane(globalStatsArea);
         globalScroll.setBorder(BorderFactory.createTitledBorder("Stats globais (S)"));
         globalScroll.setPreferredSize(new Dimension(260, 260));
+        globalScroll.getViewport().setBackground(PANEL_DARK);
 
         statusPanel.add(semaforoScroll);
         statusPanel.add(Box.createVerticalStrut(10));
@@ -136,6 +173,7 @@ public class SwingInterface extends JFrame {
 
     }
 
+    /** Inicia processos dos servidores e prepara controlos da UI. */
     private void startServers() {
         if (servidoresAtivos) {
             appendLog("Servidores ja estao ativos.");
@@ -150,17 +188,16 @@ public class SwingInterface extends JFrame {
         if (entradaCombo.getItemCount() > 0) entradaCombo.setSelectedIndex(0);
         entradaCombo.setEnabled(true);
 
-        for (Evento node : new ArrayList<>(topologia.getGraph().values())) {
-            Thread thread = new Thread(() -> {
-                try {
-                    new CruzamentoServer(node, topologia).start();
-                } catch (Exception e) {
-                    appendLog("Falha ao iniciar " + node.getName() + ": " + e.getMessage());
-                }
-            }, "Servidor-" + node.getName());
-            thread.setDaemon(true);
-            thread.start();
-            servidores.add(thread);
+        String cp = System.getProperty("java.class.path");
+        for (No node : new ArrayList<>(topologia.getGraph().values())) {
+            try {
+                Process p = new ProcessBuilder("java", "-cp", cp, "src.Servers.NodeServer", node.getName())
+                        .inheritIO()
+                        .start();
+                servidores.add(p);
+            } catch (Exception e) {
+                appendLog("Falha ao iniciar " + node.getName() + ": " + e.getMessage());
+            }
         }
 
         servidoresAtivos = true;
@@ -170,28 +207,62 @@ public class SwingInterface extends JFrame {
         appendLog("Servidores iniciados. Mapa pronto.");
     }
 
-    //TODO
-    public void registarStatsVeiculo(Veiculo v) {
-
-        int id = v.getId();
-        LocalDateTime entrada = v.getTempoEntrada();
-        LocalDateTime saida = v.getTempoSaida();
-
-        String entradaStr = entrada != null ? entrada.toString() : "-";
-        String saidaStr = saida != null ? saida.toString() : "-";
-
-        double tempoTotal = v.getTempoTotal();
-        long tempoSemaforo = v.getTempoAtravessarSemaforo();
-        double tempoNodes = v.getTempoAteProximoNode();
-
-        String linha = String.format(
-                "%s | Entrada: %s | Saída: %s | Total: %.1fs | Nó: %.2fs | Semáforo: %ds",
-                id, entradaStr, saidaStr, tempoTotal, tempoNodes, tempoSemaforo
-        );
-
-        veiculosListModel.addElement(linha);
+    /** Aplica o tema escuro a componentes Swing padrao. */
+    private void aplicarTemaEscuro() {
+        UIManager.put("Panel.background", BG_DARK);
+        UIManager.put("OptionPane.background", BG_DARK);
+        UIManager.put("OptionPane.messageForeground", TEXT_LIGHT);
+        UIManager.put("TextArea.background", PANEL_DARK);
+        UIManager.put("TextArea.foreground", TEXT_LIGHT);
+        UIManager.put("List.background", PANEL_DARK);
+        UIManager.put("List.foreground", TEXT_LIGHT);
+        UIManager.put("ScrollPane.background", BG_DARK);
+        UIManager.put("Label.foreground", TEXT_LIGHT);
+        UIManager.put("Button.background", PANEL_DARK);
+        UIManager.put("Button.foreground", TEXT_LIGHT);
+        UIManager.put("ComboBox.background", PANEL_DARK);
+        UIManager.put("ComboBox.foreground", TEXT_LIGHT);
     }
 
+    /** Finaliza processos dos servidores e repoe controlos. */
+    private void stopServers() {
+        fluxoFixoAtivo = false;
+        for (Process p : servidores) {
+            try {
+                p.destroy();
+            } catch (Exception ignored) {}
+            try {
+                p.destroyForcibly();
+            } catch (Exception ignored) {}
+        }
+        servidores.clear();
+        servidoresAtivos = false;
+        startServersButton.setEnabled(true);
+        gerarVeiculoButton.setEnabled(false);
+        fluxoFixoButton.setEnabled(false);
+        appendLog("Servidores terminados.");
+    }
+
+    /**
+     * Regista e exibe estatisticas agregadas de um veiculo concluido.
+     *
+     * @param v veiculo processado
+     */
+    public void registarStatsVeiculo(Veiculo v) {
+
+        VeiculoStats.VeiculoSnapshot snap = VeiculoStats.fromVeiculo(v);
+        if (snap == null) return;
+
+        SwingUtilities.invokeLater(() -> {
+            removerVeiculoDaLista(snap.id());
+            veiculosListModel.add(0, formatVeiculoSnapshot(snap));
+            while (veiculosListModel.size() > 100) {
+                veiculosListModel.removeElementAt(veiculosListModel.size() - 1);
+            }
+        });
+    }
+
+    /** Gera um veiculo a partir da entrada selecionada. */
     private void gerarVeiculo() {
         if (!servidoresAtivos || topologia == null || geradorCaminhos == null) {
             appendLog("Inicie os servidores antes de gerar veiculos.");
@@ -213,6 +284,11 @@ public class SwingInterface extends JFrame {
         }, "GeradorVeiculo").start();
     }
 
+    /**
+     * Adiciona texto ao log da interface com timestamp.
+     *
+     * @param text mensagem a registar
+     */
     public void appendLog(String text) {
         SwingUtilities.invokeLater(() -> {
             logArea.append("[" + LocalTime.now().withNano(0) + "] " + text + System.lineSeparator());
@@ -220,24 +296,50 @@ public class SwingInterface extends JFrame {
         });
     }
 
+    /**
+     * Atualiza mapa com nova posicao de um veiculo.
+     *
+     * @param nomeNo no atual
+     * @param veiculo veiculo movido
+     */
     public static void notificarPosicaoVeiculo(String nomeNo, Veiculo veiculo) {
         if (instance != null) {
             instance.registarMovimento(nomeNo, veiculo);
         }
     }
 
+    /**
+     * Atualiza estado de um semaforo na UI.
+     *
+     * @param semaforoId identificador do semaforo
+     * @param ativo se esta libertado
+     * @param fila tamanho da fila
+     */
     public static void notificarEstadoSemaforo(String semaforoId, boolean ativo, int fila) {
         if (instance != null) {
             instance.atualizarEstadoSemaforo(semaforoId, ativo, fila);
         }
     }
 
+    /**
+     * Regista envio de veiculo entre semaforos.
+     *
+     * @param semaforoId id do semaforo
+     * @param destino no destino
+     * @param veiculo veiculo enviado
+     */
     public static void notificarEnvio(String semaforoId, String destino, Veiculo veiculo) {
         if (instance != null) {
             instance.registarMovimentoSemaforo(semaforoId, destino, veiculo);
         }
     }
 
+    /**
+     * Recebe estatisticas de semaforos e atualiza a UI.
+     *
+     * @param cruzamento identificador da origem
+     * @param snaps mapa de snapshots por semaforo
+     */
     public static void notificarStatsSemaforos(String cruzamento, Map<String, SemaforoStats.Snapshot> snaps) {
         if (instance != null) {
             snaps.forEach(semaforosSnapshots::put);
@@ -245,13 +347,34 @@ public class SwingInterface extends JFrame {
         }
     }
 
-    //TODO
+    /**
+     * Atualiza estatisticas agregadas de veiculos na UI.
+     *
+     * @param veiculoId id do veiculo
+     * @param snapshot dados do veiculo
+     */
     public static void notificarStatsVeiculos(String veiculoId, VeiculoStats.Snapshot snapshot) {
         if (instance != null) {
             instance.atualizarStatsVeiculosUI(snapshot);
         }
     }
 
+    /**
+     * Regista estatisticas de um veiculo individual.
+     *
+     * @param veiculo veiculo concluido
+     */
+    public static void notificarStatsVeiculo(Veiculo veiculo) {
+        if (instance != null) {
+            instance.registarStatsVeiculo(veiculo);
+        }
+    }
+
+    /**
+     * Atualiza o snapshot global de estatisticas.
+     *
+     * @param snapshot estado global
+     */
     public static void notificarStatsGlobais(GlobalStats.Snapshot snapshot) {
         globalSnapshot = snapshot;
         if (instance != null) {
@@ -259,6 +382,12 @@ public class SwingInterface extends JFrame {
         }
     }
 
+    /**
+     * Atualiza a posicao de um veiculo no painel de mapa.
+     *
+     * @param nomeNo no atual
+     * @param veiculo veiculo movido
+     */
     private void registarMovimento(String nomeNo, Veiculo veiculo) {
         SwingUtilities.invokeLater(() -> {
             mapPanel.atualizarPosicao(nomeNo, veiculo);
@@ -266,31 +395,30 @@ public class SwingInterface extends JFrame {
         });
     }
 
-    //TODO
+    /**
+     * Refresca lista de estatisticas por veiculo.
+     *
+     * @param snapshot snapshot a exibir
+     */
     private void atualizarStatsVeiculosUI(VeiculoStats.Snapshot snapshot) {
         SwingUtilities.invokeLater(() -> {
             veiculosListModel.clear();
 
             snapshot.porVeiculo().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> {
-                        VeiculoStats.VeiculoSnapshot s = entry.getValue();
-
-                        String linha = String.format(
-                                "V%-3d | %-7s | total=%.1fs | semaforos=%.1fs | nodes=%.1fs | estimado=%.1fs",
-                                s.id(),
-                                s.tipo(),
-                                s.tempoNoSistema(),
-                                s.tempoSemaforo(),
-                                s.tempoNodes(),
-                                s.tempoTotalEstimado()
-                        );
-
-                        veiculosListModel.addElement(linha);
-                    });
+                    .map(Map.Entry::getValue)
+                    .map(this::formatVeiculoSnapshot)
+                    .forEach(veiculosListModel::addElement);
         });
     }
 
+    /**
+     * Atualiza o estado local de um semaforo e repinta o painel.
+     *
+     * @param semaforoId identificador do semaforo
+     * @param ativo se esta aberto
+     * @param fila tamanho da fila
+     */
     private void atualizarEstadoSemaforo(String semaforoId, boolean ativo, int fila) {
         semaforosStatus.put(semaforoId, new SemaforoStatus(ativo, fila));
 
@@ -303,10 +431,10 @@ public class SwingInterface extends JFrame {
                         String[] partes = entry.getKey().split("->");
                         String origem = partes.length == 2 ? partes[0] : "";
                         String destino = partes.length == 2 ? partes[1] : entry.getKey();
-                        String label = destino + " <= " + origem;
+                        String label = destino + " vindo de " + origem;
                         String linha = String.format("%-14s | %s | fila=%d",
                                 label,
-                                status.ativo ? "VERDE" : "VERM",
+                                status.ativo ? "\uD83D\uDFE2" : "\uD83D\uDD34",
                                 status.fila);
                         semaforosListModel.addElement(linha);
                     });
@@ -314,6 +442,13 @@ public class SwingInterface extends JFrame {
         });
     }
 
+    /**
+     * Regista um movimento de veiculo por um semaforo para exibir na lista.
+     *
+     * @param semaforoId id do semaforo
+     * @param destino no destino
+     * @param veiculo veiculo enviado
+     */
     private void registarMovimentoSemaforo(String semaforoId, String destino, Veiculo veiculo) {
         SwingUtilities.invokeLater(() -> {
             String linha = "V" + veiculo.getId() + " via " + semaforoId + " -> " + destino;
@@ -324,6 +459,7 @@ public class SwingInterface extends JFrame {
         });
     }
 
+    /** Atualiza a lista com snapshots de estatisticas por semaforo. */
     private void atualizarEstatisticasSemaforosUI() {
         SwingUtilities.invokeLater(() -> {
             estatisticasListModel.clear();
@@ -331,13 +467,14 @@ public class SwingInterface extends JFrame {
                     .sorted(Map.Entry.comparingByKey())
                     .forEach(entry -> {
                         SemaforoStats.Snapshot s = entry.getValue();
-                        String linha = String.format("%s | filaAtual=%d filaMax=%d filaMedia=%.1f processados=%s",
-                                entry.getKey(), s.filaAtual(), s.filaMax(), s.filaMedia(), s.processadosPorTipo());
+                        String linha = String.format("%s | filaMax=%d filaMedia=%.1f processados=%s",
+                                entry.getKey(), s.filaMax(), s.filaMedia(), s.processadosPorTipo());
                         estatisticasListModel.addElement(linha);
                     });
         });
     }
 
+    /** Atualiza painel textual com dados globais acumulados. */
     private void atualizarStatsGlobaisUI() {
         SwingUtilities.invokeLater(() -> {
             if (globalSnapshot == null) {
@@ -358,6 +495,12 @@ public class SwingInterface extends JFrame {
         });
     }
 
+    /**
+     * Formata um valor em segundos para string amigavel.
+     *
+     * @param segundos tempo em segundos
+     * @return representacao com sufixo m ou s
+     */
     private String formatTempo(double segundos) {
         if (segundos >= 60) {
             double minutos = segundos / 60.0;
@@ -366,25 +509,68 @@ public class SwingInterface extends JFrame {
         return String.format("%.1fs", segundos);
     }
 
+    /**
+     * Converte um snapshot de veiculo em linha descritiva.
+     *
+     * @param s snapshot a formatar
+     * @return texto pronto para a lista
+     */
+    private String formatVeiculoSnapshot(VeiculoStats.VeiculoSnapshot s) {
+        String entrada = s.entrada() != null ? s.entrada().format(HORA_FMT) : "-";
+        String saida = s.saida() != null ? s.saida().format(HORA_FMT) : "-";
+        return String.format(
+                "V%-3d | Entrada:%s  Saida:%s | Tempo total=%.1fs | Tempo para arrancar=%.1fs | Tempo entre cruzamentos=%.1fs",
+                s.id(),
+                entrada,
+                saida,
+                s.tempoNoSistema(),
+                s.tempoSemaforo(),
+                s.tempoNodes()
+        );
+    }
+
+    /**
+     * Remove entrada de um veiculo especifico da lista de estatisticas.
+     *
+     * @param id id do veiculo a remover
+     */
+    private void removerVeiculoDaLista(int id) {
+        for (int i = veiculosListModel.size() - 1; i >= 0; i--) {
+            String linha = veiculosListModel.get(i);
+            int fimId = linha.indexOf(' ', 1);
+            if (fimId == -1) fimId = linha.indexOf('|', 1);
+            if (fimId == -1) continue;
+            try {
+                int parsed = Integer.parseInt(linha.substring(1, fimId).trim());
+                if (parsed == id) {
+                    veiculosListModel.remove(i);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+    }
+
+    /** Liga ou desliga o fluxo automatico de geracao de veiculos. */
     private void alternarFluxoFixo() {
         if (!servidoresAtivos || topologia == null || geradorCaminhos == null) {
-            appendLog("Inicie os servidores antes de iniciar o Simulação automática.");
+            appendLog("Inicie os servidores antes de iniciar o Simulacao automatica.");
             return;
         }
         if (fluxoFixoAtivo) {
             fluxoFixoAtivo = false;
-            fluxoFixoButton.setText("Simulação automática");
-            appendLog("Simulação automática parado.");
+            fluxoFixoButton.setText("Simulacao automatica");
+            appendLog("Simulacao automatica parada.");
             return;
         }
         fluxoFixoAtivo = true;
-        fluxoFixoButton.setText("Parar Simulação automática");
-        appendLog("Simulação automática iniciada.");
-        fluxoFixoThread = new Thread(this::loopFluxoFixo, "Simulação automática");
+        fluxoFixoButton.setText("Parar Simulacao automatica");
+        appendLog("Simulacao automatica iniciada.");
+        fluxoFixoThread = new Thread(this::loopFluxoFixo, "Simulacao automatica");
         fluxoFixoThread.setDaemon(true);
         fluxoFixoThread.start();
     }
 
+    /** Gera veiculos periodicamente enquanto o fluxo fixo estiver ativo. */
     private void loopFluxoFixo() {
         Map<String, Long> intervalo = Map.of("E1", 2000L, "E2", 2500L, "E3", 3000L);
         Map<String, Long> proximoEnvio = new ConcurrentHashMap<>();
@@ -414,14 +600,21 @@ public class SwingInterface extends JFrame {
         }
     }
 
+    /**
+     * Cria e envia um veiculo partindo de uma entrada especifica.
+     *
+     * @param entradaSelecionada nome da entrada
+     * @param tipo tipo de veiculo
+     * @throws Exception em falha de envio
+     */
     private void gerarVeiculoEntrada(String entradaSelecionada, VeiculoType tipo) throws Exception {
         if (entradaSelecionada == null) return;
-        List<Evento> caminho = geradorCaminhos.gerarCaminho(entradaSelecionada);
-        Evento origem = caminho.get(0);
+        List<No> caminho = geradorCaminhos.gerarCaminho(entradaSelecionada);
+        No origem = caminho.get(0);
 
         Veiculo veiculo = new Veiculo(tipo, origem, caminho);
 
-        String rotaStr = caminho.stream().map(Evento::getName).collect(Collectors.joining("->"));
+        String rotaStr = caminho.stream().map(No::getName).collect(Collectors.joining("->"));
         appendLog("Gerado: Veiculo " + veiculo.getId() + " (" + tipo + ") Rota: " + rotaStr);
 
         registarMovimento(origem.getName(), veiculo);
@@ -429,182 +622,5 @@ public class SwingInterface extends JFrame {
         new EntradaSistema().enviarVeiculo(veiculo);
     }
 
-    class TrafficMapPanel extends JPanel {
-        private final Map<String, Point> coordenadas = Map.of(
-                "E1", new Point(150, 50),  "E2", new Point(450, 50),  "E3", new Point(750, 50),
-                "Cr1", new Point(150, 250), "Cr2", new Point(450, 250), "Cr3", new Point(750, 250),
-                "Cr4", new Point(150, 450), "Cr5", new Point(450, 450), "S",   new Point(750, 450)
-        );
-
-        private record VehicleRender(Veiculo veiculo, String origem) {}
-        private final Map<String, List<VehicleRender>> veiculosNosNos = new ConcurrentHashMap<>();
-
-        public TrafficMapPanel() {
-            setBackground(Color.WHITE);
-            coordenadas.keySet().forEach(k -> veiculosNosNos.put(k, new ArrayList<>()));
-        }
-
-        public void atualizarPosicao(String novoNo, Veiculo v) {
-            for (List<VehicleRender> lista : veiculosNosNos.values()) {
-                lista.removeIf(render -> render.veiculo().getId() == v.getId());
-            }
-
-            if (novoNo != null && veiculosNosNos.containsKey(novoNo)) {
-                veiculosNosNos.get(novoNo).add(new VehicleRender(v, origemDe(v)));
-            }
-        }
-
-        private String origemDe(Veiculo v) {
-            int pos = v.getPosicaoAtual();
-            if (pos > 0 && pos - 1 < v.getPercurso().size()) {
-                return v.getPercurso().get(pos - 1).getName();
-            }
-            return v.getOrigem().getName();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g;
-
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            g2.setColor(Color.LIGHT_GRAY);
-            g2.setStroke(new BasicStroke(3));
-
-            desenharSeta(g2, "E1", "Cr1"); desenharSeta(g2, "E2", "Cr2"); desenharSeta(g2, "E3", "Cr3");
-            desenharSeta(g2, "Cr1", "Cr4"); desenharSeta(g2, "Cr2", "Cr5"); desenharSeta(g2, "Cr3", "S");
-            desenharSeta(g2, "Cr4", "Cr5"); desenharSeta(g2, "Cr5", "S");
-            desenharSeta(g2, "Cr1", "Cr2"); desenharSeta(g2, "Cr2", "Cr1");
-            desenharSeta(g2, "Cr2", "Cr3"); desenharSeta(g2, "Cr3", "Cr2");
-
-            for (var entry : coordenadas.entrySet()) {
-                String nome = entry.getKey();
-                Point p = entry.getValue();
-
-                g2.setColor(new Color(230, 240, 255)); // Azul bem claro
-                g2.fillOval(p.x - 25, p.y - 25, 50, 50);
-
-                g2.setColor(Color.BLACK);
-                g2.setStroke(new BasicStroke(1));
-                g2.setFont(new Font("Arial", Font.BOLD, 14));
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(nome, p.x - fm.stringWidth(nome)/2, p.y + fm.getAscent()/2 - 3);
-            }
-
-            for (var entry : semaforosStatus.entrySet()) {
-                String key = entry.getKey();
-                String[] partes = key.split("->");
-                if (partes.length != 2) continue;
-                String origem = partes[0];
-                String destino = partes[1];
-
-                Point destinoP = coordenadas.get(destino);
-                if (destinoP == null) continue;
-
-                Point offset = offsetSemaforo(origem, destino);
-                int x = destinoP.x + offset.x;
-                int y = destinoP.y + offset.y;
-
-                SemaforoStatus status = entry.getValue();
-                g2.setColor(status.ativo ? new Color(0, 200, 0) : Color.RED);
-                g2.fillOval(x - 8, y - 8, 16, 16);
-                g2.setColor(Color.BLACK);
-                g2.drawOval(x - 8, y - 8, 16, 16);
-            }
-
-            for (var entry : veiculosNosNos.entrySet()) {
-                String destino = entry.getKey();
-                Point pNo = coordenadas.get(destino);
-                List<VehicleRender> lista = entry.getValue();
-
-                Map<String, Integer> contadorDirecao = new java.util.HashMap<>();
-
-                for (VehicleRender render : lista) {
-                    Veiculo v = render.veiculo();
-                    String origem = render.origem();
-                    String direcao = direcao(origem, destino);
-                    int idx = contadorDirecao.getOrDefault(direcao, 0);
-                    contadorDirecao.put(direcao, idx + 1);
-
-                    Point off = offsetVeiculo(direcao, idx);
-                    int x = pNo.x + off.x;
-                    int y = pNo.y + off.y;
-
-                    String emoji = switch (v.getTipo()) {
-                        case CARRO -> "🚗";
-                        case MOTO -> "🏍";
-                        case CAMIAO -> "🚚";
-                    };
-
-                    g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-                    g2.drawString(emoji, x - 10, y + 6);
-                    g2.setColor(Color.BLACK);
-                    g2.setFont(new Font("Arial", Font.PLAIN, 10));
-                    g2.drawString(String.valueOf(v.getId()), x - 5, y - 12);
-                }
-            }
-        }
-
-        private void desenharSeta(Graphics2D g2, String de, String para) {
-            if(!coordenadas.containsKey(de) || !coordenadas.containsKey(para)) return;
-            Point p1 = coordenadas.get(de);
-            Point p2 = coordenadas.get(para);
-            g2.drawLine(p1.x, p1.y, p2.x, p2.y);
-        }
-
-        private Point offsetSemaforo(String origem, String destino) {
-            switch (destino) {
-                case "Cr2":
-                    if ("E2".equals(origem)) return new Point(0, -40);
-                    if ("Cr3".equals(origem)) return new Point(40, 0);
-                    return new Point(-40, 0);
-                case "Cr1":
-                    if ("E1".equals(origem)) return new Point(0, -40);
-                    return new Point(40, 0);
-                case "Cr3":
-                    if ("E3".equals(origem)) return new Point(0, -40);
-                    return new Point(-40, 0);
-                case "Cr4":
-                    return new Point(0, -40);
-                case "Cr5":
-                    if ("Cr2".equals(origem)) return new Point(0, -40);
-                    return new Point(-40, 0);
-                case "S":
-                    if ("Cr3".equals(origem)) return new Point(0, -40);
-                    return new Point(-40, 0);
-                default:
-                    return new Point(0, -40);
-            }
-        }
-
-        private String direcao(String origem, String destino) {
-            return switch (destino) {
-                case "Cr2" -> {
-                    if ("E2".equals(origem)) yield "top";
-                    if ("Cr3".equals(origem)) yield "right";
-                    yield "left";
-                }
-                case "Cr1" -> "E1".equals(origem) ? "top" : "right";
-                case "Cr3" -> "E3".equals(origem) ? "top" : "left";
-                case "Cr4" -> "top";
-                case "Cr5" -> "Cr2".equals(origem) ? "top" : "left";
-                case "S"   -> "Cr3".equals(origem) ? "top" : "left";
-                default -> "top";
-            };
-        }
-
-        private Point offsetVeiculo(String direcao, int idx) {
-            int espa = 20;
-            return switch (direcao) {
-                case "top" -> new Point(0, -70 - idx * espa);
-                case "right" -> new Point(70 + idx * espa, 0);
-                case "left" -> new Point(-70 - idx * espa, 0);
-                case "bottom" -> new Point(0, 70 + idx * espa);
-                default -> new Point(0, -70 - idx * espa);
-            };
-        }
-    }
-
-    private record SemaforoStatus(boolean ativo, int fila) {}
+    public record SemaforoStatus(boolean ativo, int fila) {}
 }

@@ -1,12 +1,17 @@
 package src.Servers;
 
 import src.Core.Data.Veiculo;
-import src.Core.Data.Evento;
+import src.Core.Data.No;
 
 public class EntradaSistema {
+    /**
+     * Envia o veiculo para o no de origem da sua rota.
+     *
+     * @param veiculo veiculo recem-criado
+     * @throws Exception em falha de rede ou serializacao
+     */
     public void enviarVeiculo(Veiculo veiculo) throws Exception {
-        Evento origem = veiculo.getOrigem();
-        SocketCliente.enviar(origem.getHost(), origem.getPort(), veiculo);
-        System.out.println("Veiculo enviado para " + origem.getName());
+        No origem = veiculo.getOrigem();
+        ClientSocket.enviarObjeto(origem.getHost(), origem.getPort(), veiculo);
     }
 }

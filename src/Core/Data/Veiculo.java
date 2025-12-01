@@ -11,15 +11,22 @@ public class Veiculo implements Serializable {
     private static final AtomicInteger counter = new AtomicInteger(0);
     private final int id;
     private final VeiculoType tipo;
-    private final Evento origem;
-    private final List<Evento> percurso;
+    private final No origem;
+    private final List<No> percurso;
     private int posicaoAtual;
     private final LocalDateTime tempoEntrada;
     private LocalDateTime tempoSaida;
     private long tempoAtravessarSemaforo;
     private double tempoAteProximoNode;
 
-    public Veiculo(VeiculoType tipo, Evento origem, List<Evento> percurso) {
+    /**
+     * Cria um veiculo com percurso pre-definido.
+     *
+     * @param tipo    categoria do veiculo
+     * @param origem  no inicial
+     * @param percurso lista ordenada de nos a visitar
+     */
+    public Veiculo(VeiculoType tipo, No origem, List<No> percurso) {
         this.id = counter.incrementAndGet();
         this.tipo = tipo;
         this.origem = origem;
@@ -40,37 +47,64 @@ public class Veiculo implements Serializable {
         }
     }
 
+    /** @return identificador sequencial do veiculo. */
     public int getId() { return id; }
 
+    /** @return tipo do veiculo. */
     public VeiculoType getTipo() { return tipo; }
 
-    public Evento getOrigem() { return origem; }
+    /** @return no de origem. */
+    public No getOrigem() { return origem; }
 
-    public List<Evento> getPercurso() { return percurso; }
+    /** @return percurso completo do veiculo. */
+    public List<No> getPercurso() { return percurso; }
 
+    /** @return indice do no atual no percurso. */
     public int getPosicaoAtual() { return posicaoAtual; }
 
+    /** @return instante de entrada no sistema. */
     public LocalDateTime getTempoEntrada() { return tempoEntrada; }
 
+    /** @return instante de saida do sistema. */
     public LocalDateTime getTempoSaida() { return tempoSaida; }
 
+    /**
+     * Marca o tempo de saida do sistema.
+     *
+     * @param tempoSaida instante de saida
+     */
     public void setTempoSaida(LocalDateTime tempoSaida) { this.tempoSaida = tempoSaida; }
 
-    public long getTempoAtravessarSemaforo() { return tempoAtravessarSemaforo; }
+    /** @return tempo em segundos para atravessar um semaforo. */
+   public long getTempoAtravessarSemaforo() { return tempoAtravessarSemaforo; }
 
+    /** @return tempo estimado ate o proximo no em segundos. */
     public double getTempoAteProximoNode() { return tempoAteProximoNode; }
 
+    /**
+     * Avanca a posicao atual para o proximo no do percurso.
+     */
     public void avancar() {
         if (posicaoAtual < percurso.size() - 1)
             posicaoAtual++;
     }
 
-    public Evento getProximo() {
+    /**
+     * Obtem o proximo no a visitar.
+     *
+     * @return proximo no ou null se o percurso terminou
+     */
+    public No getProximo() {
         if (posicaoAtual + 1 < percurso.size())
             return percurso.get(posicaoAtual + 1);
         return null;
     }
 
+    /**
+     * Calcula o tempo total no sistema somando tempo real e estimado.
+     *
+     * @return tempo total em segundos ou -1 se ainda nao saiu
+     */
     public double getTempoTotal() {
         if (tempoEntrada == null || tempoSaida == null) return -1;
         double tempoReal = Duration.between(tempoEntrada, tempoSaida).toSeconds();
@@ -78,13 +112,16 @@ public class Veiculo implements Serializable {
         return tempoReal + tempoEstimado;
     }
 
+    /**
+     * @return representacao textual com identificador, tipo e percurso.
+     */
     @Override
     public String toString() {
         String posStr = posicaoAtual == -1 ? origem.getName() : percurso.get(posicaoAtual).getName();
         return String.format(
                 "Veiculo{id=%d, tipo=%s, origem=%s, pos=%s, percurso=%s}",
                 id, tipo, origem.getName(), posStr,
-                percurso.stream().map(Evento::getName).toList()
+                percurso.stream().map(No::getName).toList()
         );
     }
 }

@@ -10,19 +10,44 @@ import java.util.Map;
 public class VeiculoStats {
     private final Map<Integer, VeiculoSnapshot> statsPorVeiculo = new HashMap<>();
 
+    /**
+     * Armazena as estatisticas finais de um veiculo.
+     *
+     * @param v veiculo concluido
+     */
     public synchronized void registar(Veiculo v) {
-        if (v.getTempoEntrada() == null || v.getTempoSaida() == null) return;
+        VeiculoSnapshot snap = fromVeiculo(v);
+        if (snap == null) return;
 
-        int id = v.getId();
+        statsPorVeiculo.put(snap.id(), snap);
+    }
+
+    /**
+     * Obtem uma copia imutavel do estado atual.
+     *
+     * @return snapshot com estatisticas por veiculo
+     */
+    public synchronized Snapshot snapshot() {
+        return new Snapshot(new HashMap<>(statsPorVeiculo));
+    }
+
+    /**
+     * Construi um snapshot individual a partir de um veiculo.
+     *
+     * @param v veiculo de origem
+     * @return estatisticas calculadas ou null se dados incompletos
+     */
+    public static VeiculoSnapshot fromVeiculo(Veiculo v) {
+        if (v == null || v.getTempoEntrada() == null || v.getTempoSaida() == null) return null;
 
         double tempoNoSistema = Duration.between(v.getTempoEntrada(), v.getTempoSaida()).toSeconds();
         double tempoTotalEstimado = v.getTempoTotal();
 
         double tempoSemaforo = v.getTempoAtravessarSemaforo();
-        double tempoNodes = v.getTempoAteProximoNode() * v.getPercurso().size();
+        double tempoNodes = v.getTempoAteProximoNode();
 
-        VeiculoSnapshot snap = new VeiculoSnapshot(
-                id,
+        return new VeiculoSnapshot(
+                v.getId(),
                 v.getTipo(),
                 v.getTempoEntrada(),
                 v.getTempoSaida(),
@@ -31,15 +56,9 @@ public class VeiculoStats {
                 tempoNodes,
                 tempoTotalEstimado
         );
-
-        statsPorVeiculo.put(id, snap);
     }
 
-    public synchronized Snapshot snapshot() {
-        return new Snapshot(new HashMap<>(statsPorVeiculo));
-    }
-
-    public record Snapshot(Map<Integer, VeiculoSnapshot> porVeiculo) {}
+    public record Snapshot(Map<Integer, VeiculoSnapshot> porVeiculo) implements java.io.Serializable {}
 
     public record VeiculoSnapshot(
             int id,
@@ -50,5 +69,5 @@ public class VeiculoStats {
             double tempoSemaforo,
             double tempoNodes,
             double tempoTotalEstimado
-    ) {}
+    ) implements java.io.Serializable {}
 }

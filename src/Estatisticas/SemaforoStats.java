@@ -5,31 +5,44 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public class SemaforoStats {
-    private int filaAtual;
     private int filaMax;
-    private long somaFilas;
-    private long amostras;
+    private long somaFilasEventos;
+    private long eventos;
     private final Map<VeiculoType, Integer> veiculosProcessados = new EnumMap<>(VeiculoType.class);
 
+    /**
+     * Regista o estado atual da fila quando um veiculo chega.
+     *
+     * @param filaAtual tamanho da fila apos o enfileiramento
+     */
     public synchronized void registarEnfileiramento(int filaAtual) {
-        this.filaAtual = filaAtual;
         filaMax = Math.max(filaMax, filaAtual);
-        somaFilas += filaAtual;
-        amostras++;
+        somaFilasEventos += filaAtual;
+        eventos++;
     }
 
+    /**
+     * Regista a saida de um veiculo e o tamanho da fila no momento.
+     *
+     * @param tipo tipo do veiculo que saiu
+     * @param filaAtual tamanho da fila apos a saida
+     */
     public synchronized void registarSaida(VeiculoType tipo, int filaAtual) {
-        this.filaAtual = filaAtual;
         filaMax = Math.max(filaMax, filaAtual);
-        somaFilas += filaAtual;
-        amostras++;
+        somaFilasEventos += filaAtual;
+        eventos++;
         veiculosProcessados.merge(tipo, 1, Integer::sum);
     }
 
+    /**
+     * Produz um snapshot imutavel das estatisticas recolhidas.
+     *
+     * @return estatisticas consolidadas
+     */
     public synchronized Snapshot snapshot() {
-        double media = amostras > 0 ? (double) somaFilas / amostras : 0.0;
-        return new Snapshot(filaAtual, filaMax, media, new EnumMap<>(veiculosProcessados));
+        double media = eventos > 0 ? (double) somaFilasEventos / eventos : 0.0;
+        return new Snapshot(filaMax, media, new EnumMap<>(veiculosProcessados));
     }
 
-    public record Snapshot(int filaAtual, int filaMax, double filaMedia, Map<VeiculoType, Integer> processadosPorTipo) {}
+    public record Snapshot(int filaMax, double filaMedia, Map<VeiculoType, Integer> processadosPorTipo) implements java.io.Serializable {}
 }

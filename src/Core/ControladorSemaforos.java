@@ -10,12 +10,18 @@ public class ControladorSemaforos extends Thread {
     private final int TEMPO_INTERVALO = 300;
     private final int TEMPO_ESPERA = 300;
 
+    /**
+     * Cria um controlador que alterna a abertura entre varios semaforos.
+     *
+     * @param semaforos colecao de semaforos a gerir
+     */
     public ControladorSemaforos(Collection<Semaforo> semaforos) {
         this.semaforos = List.copyOf(semaforos);
         setName("ControladorSemaforos");
         setDaemon(true);
     }
 
+    /** Ciclo que escolhe o semaforo prioritario e faz a alternancia. */
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
@@ -39,6 +45,11 @@ public class ControladorSemaforos extends Thread {
         }
     }
 
+    /**
+     * Seleciona o semaforo com maior fila.
+     *
+     * @return semaforo escolhido ou null se nenhum disponivel
+     */
     private Semaforo escolherSemaforoMaisImportante() {
         Semaforo melhor = null;
         int prioridadeMax = 0;
@@ -51,13 +62,14 @@ public class ControladorSemaforos extends Thread {
             }
         }
 
-        if (melhor != null) {
-            System.out.println("Controlador escolheu " + melhor.getIdSemaforo() + " (fila = " + prioridadeMax + ")");
-        }
-
         return melhor;
     }
 
+    /**
+     * Suspende a execucao por um periodo.
+     *
+     * @param millis duracao em milissegundos
+     */
     private void dormir(int millis) {
         try {
             Thread.sleep(millis);
