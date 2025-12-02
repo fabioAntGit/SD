@@ -15,6 +15,7 @@ import java.awt.*;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +37,8 @@ public class SwingInterface extends JFrame {
     private final DefaultListModel<String> estatisticasListModel = new DefaultListModel<>();
     private final DefaultListModel<String> veiculosListModel = new DefaultListModel<>();
     private final JTextArea globalStatsArea = new JTextArea(5, 25);
+    private BarChartPanel globalChartPanel;
+    private BarChartPanel filaChartPanel;
     private Topologia topologia;
     private GeradorCaminhos geradorCaminhos;
     private volatile boolean servidoresAtivos;
@@ -48,10 +51,10 @@ public class SwingInterface extends JFrame {
     private static volatile GlobalStats.Snapshot globalSnapshot;
     private static final DateTimeFormatter HORA_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final DashboardServer dashboardServer = new DashboardServer();
-    private static final Color BG_DARK = new Color(30, 30, 30);
-    private static final Color PANEL_DARK = new Color(45, 45, 45);
-    private static final Color TEXT_LIGHT = new Color(220, 220, 220);
-    private static final Color BORDER_DARK = new Color(70, 70, 70);
+    private static final Color BG_DARK = new Color(245, 245, 245);
+    private static final Color PANEL_DARK = new Color(230, 230, 230);
+    private static final Color TEXT_LIGHT = new Color(30, 30, 30);
+    private static final Color BORDER_DARK = new Color(200, 200, 200);
 
     /** Inicializa a interface grafica e o servidor do dashboard. */
     public SwingInterface() {
@@ -152,6 +155,14 @@ public class SwingInterface extends JFrame {
         globalScroll.setPreferredSize(new Dimension(260, 260));
         globalScroll.getViewport().setBackground(PANEL_DARK);
 
+        globalChartPanel = new BarChartPanel("Tempo medio por tipo");
+        filaChartPanel = new BarChartPanel("Fila media por semaforo");
+        JTabbedPane chartsTabs = new JTabbedPane();
+        chartsTabs.setBackground(BG_DARK);
+        chartsTabs.setForeground(TEXT_LIGHT);
+        chartsTabs.addTab("Tempo", globalChartPanel);
+        chartsTabs.addTab("Filas", filaChartPanel);
+
         statusPanel.add(semaforoScroll);
         statusPanel.add(Box.createVerticalStrut(10));
         statusPanel.add(movimentosScroll);
@@ -162,11 +173,18 @@ public class SwingInterface extends JFrame {
         statusPanel.add(Box.createVerticalStrut(10));
         statusPanel.add(globalScroll);
 
+        JPanel chartsContainer = new JPanel(new BorderLayout());
+        chartsContainer.setBackground(BG_DARK);
+        chartsContainer.add(chartsTabs, BorderLayout.CENTER);
+
         JSplitPane topo = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, mapPanel, statusPanel);
         topo.setResizeWeight(0.75);
 
+        JSplitPane bottomSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollLog, chartsContainer);
+        bottomSplit.setResizeWeight(0.7);
+
         splitPane.setTopComponent(topo);
-        splitPane.setBottomComponent(scrollLog);
+        splitPane.setBottomComponent(bottomSplit);
         splitPane.setResizeWeight(0.75);
 
         add(splitPane, BorderLayout.CENTER);
@@ -463,14 +481,17 @@ public class SwingInterface extends JFrame {
     private void atualizarEstatisticasSemaforosUI() {
         SwingUtilities.invokeLater(() -> {
             estatisticasListModel.clear();
+            Map<String, Double> chartData = new LinkedHashMap<>();
             semaforosSnapshots.entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
                     .forEach(entry -> {
                         SemaforoStats.Snapshot s = entry.getValue();
+                        chartData.put(entry.getKey(), s.filaMedia());
                         String linha = String.format("%s | filaMax=%d filaMedia=%.1f processados=%s",
                                 entry.getKey(), s.filaMax(), s.filaMedia(), s.processadosPorTipo());
                         estatisticasListModel.addElement(linha);
                     });
+            filaChartPanel.setData(chartData, "Fila media (veiculos)");
         });
     }
 
@@ -479,11 +500,14 @@ public class SwingInterface extends JFrame {
         SwingUtilities.invokeLater(() -> {
             if (globalSnapshot == null) {
                 globalStatsArea.setText("Sem dados globais ainda.");
+                globalChartPanel.setData(Map.of(), "Sem dados");
                 return;
             }
             StringBuilder sb = new StringBuilder();
             sb.append("Dwelling por tipo:\n");
+            Map<String, Double> chartData = new LinkedHashMap<>();
             globalSnapshot.porTipo().forEach((tipo, snap) -> {
+                chartData.put(tipo.name(), snap.media());
                 sb.append(tipo).append(": ")
                         .append("veiculos=").append(snap.count())
                         .append(" tempoMin=").append(formatTempo(snap.min()))
@@ -492,6 +516,7 @@ public class SwingInterface extends JFrame {
                         .append("\n");
             });
             globalStatsArea.setText(sb.toString());
+            globalChartPanel.setData(chartData, "Tempo medio (s)");
         });
     }
 

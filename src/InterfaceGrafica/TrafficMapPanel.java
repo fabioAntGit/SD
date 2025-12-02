@@ -35,7 +35,7 @@ public class TrafficMapPanel extends javax.swing.JPanel {
      */
     public TrafficMapPanel(Map<String, SemaforoStatus> semaforosStatus) {
         this.semaforosStatus = semaforosStatus;
-        setBackground(new Color(20, 20, 20));
+        setBackground(new Color(245, 245, 245));
         coordenadas.keySet().forEach(k -> veiculosNosNos.put(k, new ArrayList<>()));
     }
 
@@ -78,7 +78,7 @@ public class TrafficMapPanel extends javax.swing.JPanel {
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2.setColor(new Color(90, 90, 90));
+        g2.setColor(new Color(140, 140, 140));
         g2.setStroke(new BasicStroke(3));
 
         desenharSeta(g2, "E1", "Cr1"); desenharSeta(g2, "E2", "Cr2"); desenharSeta(g2, "E3", "Cr3");
@@ -91,10 +91,10 @@ public class TrafficMapPanel extends javax.swing.JPanel {
             String nome = entry.getKey();
             Point p = entry.getValue();
 
-            g2.setColor(new Color(60, 70, 90));
+            g2.setColor(new Color(140, 170, 210));
             g2.fillOval(p.x - 25, p.y - 25, 50, 50);
 
-            g2.setColor(new Color(220, 220, 220));
+            g2.setColor(new Color(30, 30, 30));
             g2.setStroke(new BasicStroke(1));
             g2.setFont(new Font("Arial", Font.BOLD, 14));
             FontMetrics fm = g2.getFontMetrics();
@@ -148,11 +148,11 @@ public class TrafficMapPanel extends javax.swing.JPanel {
 
                 g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
                 g2.drawString(emoji, x - 10, y + 6);
-                g2.setColor(new Color(220, 220, 220));
-                g2.setFont(new Font("Arial", Font.PLAIN, 10));
-                g2.drawString(String.valueOf(v.getId()), x - 5, y - 12);
-            }
+            g2.setColor(new Color(40, 40, 40));
+            g2.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2.drawString(String.valueOf(v.getId()), x - 5, y - 12);
         }
+    }
     }
 
     /**

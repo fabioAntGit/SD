@@ -21,6 +21,7 @@ public class NodeServer {
     private final No node;
     private final Map<String, Semaforo> semaforos = new HashMap<>();
     private ControladorSemaforos controlador;
+    private final boolean isEntradaNode;
     private static final GlobalStats globalStats = new GlobalStats();
     private static final VeiculoStats veiculoStats = new VeiculoStats();
 
@@ -32,6 +33,7 @@ public class NodeServer {
      */
     public NodeServer(No node, Topologia topologia) {
         this.node = node;
+        this.isEntradaNode = node.getName().startsWith("E");
 
         if (!"S".equals(node.getName())) {
             for (No predecessor : topologia.getPredecessores(node.getName())) {
@@ -99,8 +101,11 @@ public class NodeServer {
             Semaforo semaforo = semaforos.get(origem);
             if (semaforo != null) {
                 semaforo.adicionarVeiculo(veiculo);
-            } else {
+            } else if (isEntradaNode) {
                 ClientSocket.enviarObjeto(proximo.getHost(), proximo.getPort(), veiculo);
+            } else {
+                System.err.println("Sem semaforo configurado para origem " + origem +
+                        " no no " + node.getName() + ". Veiculo " + veiculo.getId() + " descartado.");
             }
         } catch (Exception e) {
             e.printStackTrace();
