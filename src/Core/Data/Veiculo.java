@@ -34,8 +34,8 @@ public class Veiculo implements Serializable {
         this.posicaoAtual = -1;
         this.tempoEntrada = LocalDateTime.now();
 
-        double tempoBaseSemaforoMoto = 2.0;
-        double tempoBaseDeslocamentoMoto = 2.5;
+        double tempoBaseSemaforoMoto = 1.0;
+        double tempoBaseDeslocamentoMoto = 1.5;
 
         switch (tipo) {
             case MOTO -> {
