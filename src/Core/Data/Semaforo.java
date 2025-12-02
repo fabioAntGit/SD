@@ -112,12 +112,8 @@ public class Semaforo extends Thread {
                 lock.unlock();
             }
 
-            if (veiculo == null) {
-                continue;
-            }
-
             try {
-                Thread.sleep(veiculo.getTempoAtravessarSemaforo() * 1000);
+                Thread.sleep((long) (veiculo.getTempoAtravessarSemaforo() * 1000));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;

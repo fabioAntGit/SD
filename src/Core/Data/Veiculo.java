@@ -16,7 +16,7 @@ public class Veiculo implements Serializable {
     private int posicaoAtual;
     private final LocalDateTime tempoEntrada;
     private LocalDateTime tempoSaida;
-    private long tempoAtravessarSemaforo;
+    private double tempoAtravessarSemaforo;
     private double tempoAteProximoNode;
 
     /**
@@ -34,16 +34,22 @@ public class Veiculo implements Serializable {
         this.posicaoAtual = -1;
         this.tempoEntrada = LocalDateTime.now();
 
-        switch (tipo) {
-            case MOTO -> tempoAtravessarSemaforo = 1;
-            case CARRO -> tempoAtravessarSemaforo = 2;
-            case CAMIAO -> tempoAtravessarSemaforo = 3;
-        }
+        double tempoBaseSemaforoMoto = 2.0;
+        double tempoBaseDeslocamentoMoto = 2.5;
 
         switch (tipo) {
-            case MOTO -> tempoAteProximoNode = 1.5;
-            case CARRO -> tempoAteProximoNode = 3;
-            case CAMIAO -> tempoAteProximoNode = 6;
+            case MOTO -> {
+                tempoAtravessarSemaforo = tempoBaseSemaforoMoto;
+                tempoAteProximoNode = tempoBaseDeslocamentoMoto;
+            }
+            case CARRO -> {
+                tempoAtravessarSemaforo = 2 * tempoBaseSemaforoMoto;
+                tempoAteProximoNode = 2 * tempoBaseDeslocamentoMoto;
+            }
+            case CAMIAO -> {
+                tempoAtravessarSemaforo = 4 * tempoBaseSemaforoMoto;
+                tempoAteProximoNode = 4 * tempoBaseDeslocamentoMoto;
+            }
         }
     }
 
@@ -76,7 +82,7 @@ public class Veiculo implements Serializable {
     public void setTempoSaida(LocalDateTime tempoSaida) { this.tempoSaida = tempoSaida; }
 
     /** @return tempo em segundos para atravessar um semaforo. */
-   public long getTempoAtravessarSemaforo() { return tempoAtravessarSemaforo; }
+   public double getTempoAtravessarSemaforo() { return tempoAtravessarSemaforo; }
 
     /** @return tempo estimado ate o proximo no em segundos. */
     public double getTempoAteProximoNode() { return tempoAteProximoNode; }

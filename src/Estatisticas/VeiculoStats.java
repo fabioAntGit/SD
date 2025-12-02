@@ -38,23 +38,20 @@ public class VeiculoStats {
      * @return estatisticas calculadas ou null se dados incompletos
      */
     public static VeiculoSnapshot fromVeiculo(Veiculo v) {
-        if (v == null || v.getTempoEntrada() == null || v.getTempoSaida() == null) return null;
+        if (v == null || v.getTempoEntrada() == null || v.getTempoSaida() == null)
+            return null;
 
         double tempoNoSistema = Duration.between(v.getTempoEntrada(), v.getTempoSaida()).toSeconds();
-        double tempoTotalEstimado = v.getTempoTotal();
-
         double tempoSemaforo = v.getTempoAtravessarSemaforo();
         double tempoNodes = v.getTempoAteProximoNode();
 
         return new VeiculoSnapshot(
                 v.getId(),
-                v.getTipo(),
                 v.getTempoEntrada(),
                 v.getTempoSaida(),
                 tempoNoSistema,
                 tempoSemaforo,
-                tempoNodes,
-                tempoTotalEstimado
+                tempoNodes
         );
     }
 
@@ -62,12 +59,10 @@ public class VeiculoStats {
 
     public record VeiculoSnapshot(
             int id,
-            VeiculoType tipo,
             LocalDateTime entrada,
             LocalDateTime saida,
             double tempoNoSistema,
             double tempoSemaforo,
-            double tempoNodes,
-            double tempoTotalEstimado
+            double tempoNodes
     ) implements java.io.Serializable {}
 }
