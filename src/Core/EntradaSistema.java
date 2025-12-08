@@ -1,7 +1,8 @@
-package src.Servers;
+package src.Core;
 
 import src.Core.Data.Veiculo;
 import src.Core.Data.No;
+import src.Servers.ClientSocket;
 
 public class EntradaSistema {
     /**

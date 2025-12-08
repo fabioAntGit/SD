@@ -54,5 +54,4 @@ public class ClientSocket implements AutoCloseable {
     public static void enviarParaDashboard(Object objeto) throws Exception {
         enviarObjeto(DashboardServer.HOST, DashboardServer.PORT, objeto);
     }
-
 }

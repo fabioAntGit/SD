@@ -7,7 +7,6 @@ import src.Core.Data.Topologia;
 import src.Core.Data.Veiculo;
 import src.Estatisticas.GlobalStats;
 import src.Estatisticas.VeiculoStats;
-import src.Servers.ClientSocket;
 import src.Core.Data.dtos.PositionEvent;
 import src.Core.Data.dtos.VeiculoStatsEvent;
 import src.Core.Data.dtos.SingleVeiculoEvent;

@@ -3,7 +3,7 @@ package src.InterfaceGrafica;
 import src.Core.Data.Veiculo;
 import src.Core.Enums.VeiculoType;
 import src.Estatisticas.VeiculoStats;
-import src.Servers.EntradaSistema;
+import src.Core.EntradaSistema;
 import src.Core.GeradorCaminhos;
 import src.Core.Data.No;
 import src.Core.Data.Topologia;
