@@ -1,6 +1,8 @@
 package src.Estatisticas;
 
 import src.Core.Enums.VeiculoType;
+
+import java.io.Serializable;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -44,5 +46,5 @@ public class SemaforoStats {
         return new Snapshot(filaMax, media, new EnumMap<>(veiculosProcessados));
     }
 
-    public record Snapshot(int filaMax, double filaMedia, Map<VeiculoType, Integer> processadosPorTipo) implements java.io.Serializable {}
+    public record Snapshot(int filaMax, double filaMedia, Map<VeiculoType, Integer> processadosPorTipo) implements Serializable {}
 }

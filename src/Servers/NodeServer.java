@@ -12,7 +12,10 @@ import src.Core.Data.dtos.VeiculoStatsEvent;
 import src.Core.Data.dtos.SingleVeiculoEvent;
 import src.Core.Data.dtos.GlobalStatsEvent;
 import java.io.ObjectInputStream;
+import java.net.BindException;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,10 +57,10 @@ public class NodeServer {
      * @throws Exception se houver falha ao abrir a porta
      */
     public void start() throws Exception {
-        java.net.ServerSocket server;
+        ServerSocket server;
         try {
-            server = new java.net.ServerSocket(node.getPort());
-        } catch (java.net.BindException e) {
+            server = new ServerSocket(node.getPort());
+        } catch (BindException e) {
             System.err.println("Porta " + node.getPort() + " ja esta em uso para o no " + node.getName() + ". Encerrando NodeServer.");
             return;
         }
@@ -87,7 +90,7 @@ public class NodeServer {
             if (proximo == null) {
                 ClientSocket.enviarParaDashboard(new PositionEvent(null, veiculo));
                 if ("S".equals(node.getName())) {
-                    veiculo.setTempoSaida(java.time.LocalDateTime.now());
+                    veiculo.setTempoSaida(LocalDateTime.now());
                     globalStats.registar(veiculo);
                     veiculoStats.registar(veiculo);
                     ClientSocket.enviarParaDashboard(new GlobalStatsEvent(globalStats.snapshot()));

@@ -3,6 +3,8 @@ package src.InterfaceGrafica;
 import src.Core.Data.No;
 import src.Core.Data.Veiculo;
 import src.InterfaceGrafica.SwingInterface.SemaforoStatus;
+
+import javax.swing.*;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -12,11 +14,12 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TrafficMapPanel extends javax.swing.JPanel {
+public class TrafficMapPanel extends JPanel {
     private final Map<String, Point> coordenadas = Map.of(
             "E1", new Point(150, 50),  "E2", new Point(450, 50),  "E3", new Point(750, 50),
             "Cr1", new Point(150, 250), "Cr2", new Point(450, 250), "Cr3", new Point(750, 250),
@@ -127,7 +130,7 @@ public class TrafficMapPanel extends javax.swing.JPanel {
             Point pNo = coordenadas.get(destino);
             List<VehicleRender> lista = entry.getValue();
 
-            Map<String, Integer> contadorDirecao = new java.util.HashMap<>();
+            Map<String, Integer> contadorDirecao = new HashMap<>();
 
             for (VehicleRender render : lista) {
                 Veiculo v = render.veiculo();

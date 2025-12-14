@@ -2,6 +2,8 @@ package src.Estatisticas;
 
 import src.Core.Data.Veiculo;
 import src.Core.Enums.VeiculoType;
+
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -55,7 +57,7 @@ public class VeiculoStats {
         );
     }
 
-    public record Snapshot(Map<Integer, VeiculoSnapshot> porVeiculo) implements java.io.Serializable {}
+    public record Snapshot(Map<Integer, VeiculoSnapshot> porVeiculo) implements Serializable {}
 
     public record VeiculoSnapshot(
             int id,
@@ -64,5 +66,5 @@ public class VeiculoStats {
             double tempoNoSistema,
             double tempoSemaforo,
             double tempoNodes
-    ) implements java.io.Serializable {}
+    ) implements Serializable {}
 }

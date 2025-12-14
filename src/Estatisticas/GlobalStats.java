@@ -2,6 +2,8 @@ package src.Estatisticas;
 
 import src.Core.Data.Veiculo;
 import src.Core.Enums.VeiculoType;
+
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.EnumMap;
@@ -41,5 +43,5 @@ public class GlobalStats {
         return new Snapshot(map);
     }
 
-    public record Snapshot(Map<VeiculoType, TipoStats.Snapshot> porTipo) implements java.io.Serializable {}
+    public record Snapshot(Map<VeiculoType, TipoStats.Snapshot> porTipo) implements Serializable {}
 }

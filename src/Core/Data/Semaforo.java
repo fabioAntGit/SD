@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -153,7 +154,7 @@ public class Semaforo extends Thread {
     /** Envia as estatisticas atuais do semaforo ao dashboard. */
     private void enviarStats() {
         try {
-            ClientSocket.enviarParaDashboard(new SemaforoStatsEvent(java.util.Map.of(idSemaforo, stats.snapshot())));
+            ClientSocket.enviarParaDashboard(new SemaforoStatsEvent(Map.of(idSemaforo, stats.snapshot())));
         } catch (Exception e) {
             e.printStackTrace();
         }

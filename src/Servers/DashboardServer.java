@@ -3,6 +3,7 @@ package src.Servers;
 import src.Core.Data.dtos.*;
 import src.InterfaceGrafica.SwingInterface;
 import java.io.ObjectInputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 public class DashboardServer {
@@ -20,7 +21,7 @@ public class DashboardServer {
 
     /** Loop de escuta que aceita ligacoes e cria workers para cada cliente. */
     private void runLoop() {
-        try (java.net.ServerSocket server = new java.net.ServerSocket(PORT)) {
+        try (ServerSocket server = new ServerSocket(PORT)) {
             while (true) {
                 Socket socket = server.accept();
                 new Thread(() -> processar(socket)).start();

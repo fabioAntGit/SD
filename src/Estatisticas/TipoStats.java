@@ -1,5 +1,7 @@
 package src.Estatisticas;
 
+import java.io.Serializable;
+
 public class TipoStats {
     private int count;
     private double soma;
@@ -30,5 +32,5 @@ public class TipoStats {
         return new Snapshot(count, minOut, media, maxOut);
     }
 
-    public record Snapshot(int count, double min, double media, double max) implements java.io.Serializable {}
+    public record Snapshot(int count, double min, double media, double max) implements Serializable {}
 }
